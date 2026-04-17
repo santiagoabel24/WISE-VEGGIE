@@ -191,7 +191,7 @@ class PantallaRecetas extends StatelessWidget {
 }
 
 // =======================================================
-// SECCIÓN 3: PERFIL (¡Nueva!)
+// SECCIÓN 3: PERFIL (¡Vieja!)
 // =======================================================
 class PantallaPerfil extends StatelessWidget {
   const PantallaPerfil({super.key});

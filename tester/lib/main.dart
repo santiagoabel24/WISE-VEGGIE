@@ -1,242 +1,348 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 
 void main() {
-  runApp(const NutriApp());
+  runApp(const WiseVeggieApp());
 }
 
-class NutriApp extends StatelessWidget {
-  const NutriApp({super.key});
+class WiseVeggieApp extends StatelessWidget {
+  const WiseVeggieApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Vida Sana',
       debugShowCheckedModeBanner: false,
+      title: 'Wise Veggie',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
-        useMaterial3: true,
+        fontFamily: 'Arial',
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF8EE4AF)),
       ),
-      // Ahora la pantalla principal es nuestro "Controlador" de navegación
-      home: const ControladorNavegacion(),
+      // La app inicia en el Index (Login)
+      home: const IndexPage(),
     );
   }
 }
 
-// =======================================================
-// CONTROLADOR DE NAVEGACIÓN (El que cambia las pantallas)
-// =======================================================
-class ControladorNavegacion extends StatefulWidget {
-  const ControladorNavegacion({super.key});
-
-  @override
-  State<ControladorNavegacion> createState() => _ControladorNavegacionState();
-}
-
-class _ControladorNavegacionState extends State<ControladorNavegacion> {
-  int _indiceActual = 0; // Empezamos en la pantalla 0 (Inicio)
-
-  // Esta es la lista de nuestras 3 secciones (pantallas)
-  final List<Widget> _pantallas = [
-    const PantallaInicio(),
-    const PantallaRecetas(),
-    const PantallaPerfil(),
-  ];
+// --- COMPONENTE REUTILIZABLE: FONDO CON GRADIENTE Y OVERLAY ---
+class SharedBackground extends StatelessWidget {
+  final Widget child;
+  const SharedBackground({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // El 'body' va a cambiar dependiendo del botón que toques
-      body: _pantallas[_indiceActual],
-      
-      // Aquí construimos la barra de abajo
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _indiceActual,
-        onTap: (int nuevoIndice) {
-          setState(() {
-            _indiceActual = nuevoIndice; // Cambiamos de pantalla
-          });
-        },
-        selectedItemColor: Colors.green[700], // Color cuando está seleccionado
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
-          BottomNavigationBarItem(icon: Icon(Icons.restaurant_menu), label: 'Recetas'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
+      body: Stack(
+        children: [
+          // Gradiente de fondo 
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFFD8FFD8), Color(0xFFB7F5C5), Color(0xFFE8FFE8)],
+              ),
+            ),
+          ),
+          // Imagen de fondo con opacidad y desenfoque (plaidgreen.png)
+          Opacity(
+            opacity: 0.12,
+            child: Container(
+              decoration: const BoxDecoration(
+                image: DecorationImage(
+                  image: AssetImage('assets/plaidgreen.png'), 
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          ),
+          SafeArea(child: child),
         ],
       ),
     );
   }
 }
 
-// =======================================================
-// SECCIÓN 1: INICIO (La que ya conocías)
-// =======================================================
-class PantallaInicio extends StatefulWidget {
-  const PantallaInicio({super.key});
-
-  @override
-  State<PantallaInicio> createState() => _PantallaInicioState();
-}
-
-class _PantallaInicioState extends State<PantallaInicio> {
-  int _vasosDeAgua = 0;
-
-  void _tomarAgua() {
-    setState(() { _vasosDeAgua++; });
-  }
+// --- 1. INDEX PAGE (LOGIN) ---
+class IndexPage extends StatelessWidget {
+  const IndexPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mi Nutrición', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.green[600],
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('¡Hola! 👋', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(color: Colors.blue[50], borderRadius: BorderRadius.circular(20)),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.water_drop, color: Colors.blue, size: 40),
-                      const SizedBox(width: 15),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+    return SharedBackground(
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(30),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                width: 900,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.35),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(color: Colors.white.withOpacity(0.2)),
+                ),
+                child: Column(
+                  children: [
+                    // Sección Logo
+                    Container(
+                      padding: const EdgeInsets.all(40),
+                      width: double.infinity,
+                      color: Colors.white.withOpacity(0.25),
+                      child: Column(
                         children: [
-                          const Text('Agua consumida', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                          Text('$_vasosDeAgua / 8 vasos', style: const TextStyle(color: Colors.blueGrey)),
+                          // Aquí mandamos llamar tu logo
+                          Image.asset(
+                            'assets/logoWV.png',
+                            width: 180,
+                            height: 180,
+                            fit: BoxFit.contain,
+                          ),
+                          const SizedBox(height: 10),
+                          const Text('WISE VEGGIE', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: 1)),
                         ],
                       ),
-                    ],
-                  ),
-                  ElevatedButton(
-                    onPressed: _tomarAgua,
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, shape: const CircleBorder(), padding: const EdgeInsets.all(12)),
-                    child: const Icon(Icons.add, color: Colors.white),
-                  )
+                    ),
+                    // Formulario Login
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 50),
+                      child: Column(
+                        children: [
+                          const Text('INICIAR SESIÓN', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 30),
+                          _buildInput('Nombre de Usuario'),
+                          const SizedBox(height: 18),
+                          _buildInput('Contraseña', isPassword: true),
+                          const SizedBox(height: 25),
+                          _buildButton('ENTRAR', () {
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => const BienvenidaPage()));
+                          }),
+                          const SizedBox(height: 25),
+                          const Text('Accede a tu cuenta para continuar.', textAlign: TextAlign.center),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => const RegistroPage()));
+                            },
+                            child: const Text('CREAR CUENTA', style: TextStyle(fontWeight: FontWeight.bold, decoration: TextDecoration.underline, color: Colors.black)),
+                          )
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// --- 2. REGISTRO PAGE (CREAR CUENTA) ---
+class RegistroPage extends StatelessWidget {
+  const RegistroPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SharedBackground(
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Container(
+            padding: const EdgeInsets.all(30),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.35),
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Column(
+              children: [
+                const Text('CREAR CUENTA', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 20),
+                _buildInput('Nombre de Usuario'),
+                const SizedBox(height: 10),
+                _buildInput('Correo Electrónico'),
+                const SizedBox(height: 10),
+                _buildInput('Edad'),
+                const SizedBox(height: 10),
+                _buildInput('Estatura'),
+                const SizedBox(height: 10),
+                _buildInput('Contraseña', isPassword: true),
+                const SizedBox(height: 20),
+                _buildButton('CREAR CUENTA', () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const BienvenidaPage()));
+                }),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// --- 3. BIENVENIDA PAGE ---
+class BienvenidaPage extends StatelessWidget {
+  const BienvenidaPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SharedBackground(
+      child: Center(
+        child: Container(
+          width: 500,
+          margin: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(50),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.35),
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Tu logo en la página de bienvenida
+              Image.asset(
+                'assets/logoWV.png',
+                width: 140,
+                height: 140,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 20),
+              const Text('¡Bienvenido!', style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold)),
+              const Text(
+                'Gracias por formar parte de Wise Veggie 🌱\nTu camino saludable comienza hoy.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 18),
+              ),
+              const SizedBox(height: 30),
+              _buildButton('SIGUIENTE', () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const DashboardPage()));
+              }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// --- 4. DASHBOARD PAGE (INICIO) ---
+class DashboardPage extends StatelessWidget {
+  const DashboardPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SharedBackground(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(25),
+        child: Column(
+          children: [
+            // Card de Bienvenida
+            _buildCard(
+              child: Column(
+                children: [
+                  const Text('¡Hola de nuevo! 🌱', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+                  const Text('Te sugerimos registrar la comida de hoy.'),
+                  const SizedBox(height: 15),
+                  _buildButton('Registrar comida', () {}),
                 ],
               ),
             ),
-            const SizedBox(height: 30),
-            const Text('Menú del Día', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 15),
-            _crearTarjetaComida('Desayuno', 'Avena con frutas', Icons.breakfast_dining, Colors.orange),
-            _crearTarjetaComida('Almuerzo', 'Ensalada de pollo', Icons.lunch_dining, Colors.green),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _crearTarjetaComida(String titulo, String desc, IconData icono, MaterialColor color) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: ListTile(
-        leading: CircleAvatar(backgroundColor: color[100], child: Icon(icono, color: color[700])),
-        title: Text(titulo, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(desc),
-      ),
-    );
-  }
-}
-
-// =======================================================
-// SECCIÓN 2: RECETAS (¡Nueva!)
-// =======================================================
-class PantallaRecetas extends StatelessWidget {
-  const PantallaRecetas({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Recetas Saludables', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.orange[600],
-        centerTitle: true,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _crearReceta('Smoothie Verde', 'Espina, plátano y manzana', '10 min', Icons.local_drink),
-          _crearReceta('Bowl de Quinoa', 'Quinoa, aguacate y garbanzos', '20 min', Icons.rice_bowl),
-          _crearReceta('Wrap de Pavo', 'Tortilla integral con pavo y lechuga', '15 min', Icons.bakery_dining),
-        ],
-      ),
-    );
-  }
-
-  Widget _crearReceta(String titulo, String desc, String tiempo, IconData icono) {
-    return Card(
-      elevation: 3,
-      margin: const EdgeInsets.only(bottom: 15),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(15),
-        leading: Icon(icono, size: 40, color: Colors.orange),
-        title: Text(titulo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        subtitle: Text(desc),
-        trailing: Text(tiempo, style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
-      ),
-    );
-  }
-}
-
-// =======================================================
-// SECCIÓN 3: PERFIL (¡Vieja!)
-// =======================================================
-class PantallaPerfil extends StatelessWidget {
-  const PantallaPerfil({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mi Perfil', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.purple[600],
-        centerTitle: true,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const CircleAvatar(
-              radius: 60,
-              backgroundColor: Colors.purple,
-              child: Icon(Icons.person, size: 80, color: Colors.white),
+            const SizedBox(height: 25),
+            // Calendario (Simulado)
+            _buildCard(
+              child: Column(
+                children: [
+                  const Text('Registros anteriores', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 20),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 5, mainAxisSpacing: 10, crossAxisSpacing: 10),
+                    itemCount: 30,
+                    itemBuilder: (context, index) => Container(
+                      decoration: BoxDecoration(color: const Color(0xFFDFF7DF), borderRadius: BorderRadius.circular(12)),
+                      child: Center(child: Text('${index + 1}', style: const TextStyle(fontWeight: FontWeight.bold))),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 20),
-            const Text('Usuario POCO X6', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            const Text('Objetivo: Perder peso', style: TextStyle(fontSize: 16, color: Colors.grey)),
-            const SizedBox(height: 40),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _crearEstadistica('Peso', '70 kg'),
-                _crearEstadistica('Racha', '5 días'),
-                _crearEstadistica('IMC', '22.5'),
-              ],
-            )
+            const SizedBox(height: 25),
+            // Gráfica Plato del Buen Comer
+            _buildCard(
+              child: Column(
+                children: [
+                  const Text('Plato del Buen Comer', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 20),
+                  Container(
+                    width: 200,
+                    height: 200,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: SweepGradient(
+                        colors: [Color(0xFF7ED957), Color(0xFFF4D35E), Color(0xFFFF9F1C), Color(0xFF4EA8DE), Color(0xFF7ED957)],
+                        stops: [0.0, 0.25, 0.5, 0.75, 1.0],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text('🥬 Verduras | 🌾 Cereales | 🫘 Leguminosas'),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _crearEstadistica(String titulo, String valor) {
-    return Column(
-      children: [
-        Text(valor, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.purple)),
-        Text(titulo, style: const TextStyle(fontSize: 16, color: Colors.grey)),
-      ],
-    );
-  }
+// --- HELPERS DE UI ---
+
+Widget _buildInput(String hint, {bool isPassword = false}) {
+  return TextField(
+    obscureText: isPassword,
+    decoration: InputDecoration(
+      hintText: hint,
+      filled: true,
+      fillColor: const Color(0xFFBFEBB3).withOpacity(0.85),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+    ),
+  );
+}
+
+Widget _buildButton(String text, VoidCallback onPressed) {
+  return Container(
+    width: double.infinity,
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(30),
+      gradient: const LinearGradient(colors: [Color(0xFFB7EFC5), Color(0xFF8EE4AF)]),
+    ),
+    child: ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.transparent,
+        shadowColor: Colors.transparent,
+        padding: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+      ),
+      child: Text(text, style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16)),
+    ),
+  );
+}
+
+Widget _buildCard({required Widget child}) {
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(30),
+    decoration: BoxDecoration(
+      color: Colors.white.withOpacity(0.35),
+      borderRadius: BorderRadius.circular(25),
+      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10))],
+    ),
+    child: child,
+  );
 }

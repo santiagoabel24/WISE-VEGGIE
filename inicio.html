@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wise Veggie - Inicio</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="background-overlay"></div>
+
+<main class="dashboard">
+
+  <!-- Bienvenida -->
+  <section class="card welcome-card">
+    <h1>¡Hola de nuevo! 🌱</h1>
+
+    <p id="fechaActual"></p>
+
+    <a href="registro.html" class="btn-link">
+  Registrar alimento 🍎
+    </a>
+  </section>
+
+  <!-- Calendario -->
+  <section class="card calendar-card">
+
+    <div class="calendar-header">
+      <button id="prevMonth">◀</button>
+
+      <h2 id="monthYear"></h2>
+
+      <button id="nextMonth">▶</button>
+    </div>
+
+    <div class="weekdays">
+      <div>Dom</div>
+      <div>Lun</div>
+      <div>Mar</div>
+      <div>Mié</div>
+      <div>Jue</div>
+      <div>Vie</div>
+      <div>Sáb</div>
+    </div>
+
+    <div class="calendar-grid" id="calendar"></div>
+
+    <!-- MÉTRICAS -->
+
+<section class="card streak-card">
+
+  <h2>Tu constancia 🌟</h2>
+
+  <br>
+
+  <p id="rachaActual">
+    Racha actual: 0 días
+  </p>
+
+  <p id="diasRegistrados">
+    Días registrados: 0
+  </p>
+
+</section>
+
+
+<!-- DETALLES DEL DÍA -->
+
+<section class="card details-card">
+
+  <h2>Detalles del día 📅</h2>
+
+  <br>
+
+  <div id="detalleDia">
+
+    Selecciona un día del calendario.
+
+  </div>
+
+</section>
+
+
+<!-- ENCUESTA -->
+
+<section class="card survey-card">
+
+  <h2>Encuesta nutricional 📝</h2>
+
+  <br>
+
+  <form id="surveyForm">
+
+    <input
+      type="text"
+      id="persona"
+      placeholder="Nombre de la persona"
+      required
+    >
+
+    <input
+      type="text"
+      id="habito"
+      placeholder="Hábito alimenticio"
+      required
+    >
+
+    <button type="submit">
+      Guardar encuesta
+    </button>
+
+  </form>
+
+  <br>
+
+  <div id="encuestasGuardadas"></div>
+
+</section>
+  </section>
+
+  <!-- Gráfica -->
+  <section class="card chart-card">
+    <h2>Plato del Buen Comer</h2>
+
+    <div class="circle-chart"></div>
+
+    <div class="legend">
+      <p>🥬 Verduras y frutas</p>
+      <p>🌾 Cereales</p>
+      <p>🫘 Leguminosas</p>
+      <p>🍗 Origen animal</p>
+    </div>
+
+    <br>
+
+<a href="info.html" class="btn-link">
+  Más información 📊
+</a>
+  </section>
+<!-- TIPS Y NOTICIAS -->
+
+<section class="card news-card">
+
+  <h2>Tips y noticias nutricionales 🌱</h2>
+
+  <br>
+
+  <div class="topics">
+
+    <button class="topic-btn" onclick="filtrarTema('todos')">
+      Todos
+    </button>
+
+    <button class="topic-btn" onclick="filtrarTema('azucar')">
+      Azúcar 🍭
+    </button>
+
+    <button class="topic-btn" onclick="filtrarTema('grasas')">
+      Grasas 🥑
+    </button>
+
+    <button class="topic-btn" onclick="filtrarTema('hidratacion')">
+      Hidratación 💧
+    </button>
+
+  </div>
+
+  <br>
+
+  <div id="contenedorNoticias"></div>
+
+</section>
+</main>
+
+<script type="module" src="script.js"></script>
+
+</body>
+</html>

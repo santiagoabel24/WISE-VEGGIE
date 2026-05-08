@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar alimento</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="background-overlay"></div>
+
+<main class="dashboard">
+
+<section class="card welcome-card">
+
+    <h1>Registrar alimento 🌱</h1>
+
+    <form id="foodForm">
+
+        <input
+            type="text"
+            id="nombre"
+            placeholder="Nombre del alimento"
+            required
+        >
+
+        <input
+            type="number"
+            id="cantidad"
+            placeholder="Cantidad consumida (gramos)"
+            required
+        >
+
+        <input
+            type="time"
+            id="hora"
+            required
+        >
+
+        <button type="submit">
+            Guardar alimento ✨
+        </button>
+
+    </form>
+
+    <div id="resultado"></div>
+
+    <h2 id="contadorCalorias">
+        Calorías de hoy: 0 kcal
+    </h2>
+
+    <br>
+
+    <a href="inicio.html" class="btn-link">
+        ← Volver al inicio
+    </a>
+
+</section>
+
+</main>
+
+<script type="module" src="registro.js"></script>
+
+</body>
+</html>

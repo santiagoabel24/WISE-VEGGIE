@@ -1,4 +1,3 @@
-<!-- inicio.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -9,46 +8,172 @@
 </head>
 <body>
 
-  <div class="background-overlay"></div>
+<div class="background-overlay"></div>
 
-  <main class="dashboard">
+<main class="dashboard">
 
-    <!-- Bienvenida -->
-    <section class="card welcome-card">
-      <h1>¡Hola de nuevo! 🌱</h1>
-      <p>Te sugerimos registrar la comida de hoy para seguir cuidando tu alimentación.</p>
-      <button>Registrar comida</button>
-    </section>
+  <!-- Bienvenida -->
+  <section class="card welcome-card">
+    <h1>¡Hola de nuevo! 🌱</h1>
 
-    <!-- Calendario -->
-    <section class="card calendar-card">
-      <h2>Registros anteriores</h2>
+    <p id="fechaActual"></p>
 
-      <div class="calendar-grid">
-        <div>1</div><div>2</div><div>3</div><div>4</div><div>5</div>
-        <div>6</div><div>7</div><div>8</div><div>9</div><div>10</div>
-        <div>11</div><div>12</div><div>13</div><div>14</div><div>15</div>
-        <div>16</div><div>17</div><div>18</div><div>19</div><div>20</div>
-        <div>21</div><div>22</div><div>23</div><div>24</div><div>25</div>
-        <div>26</div><div>27</div><div>28</div><div>29</div><div>30</div>
-      </div>
-    </section>
+    <a href="registro.html" class="btn-link">
+  Registrar alimento 🍎
+    </a>
+  </section>
 
-    <!-- Grafica -->
-    <section class="card chart-card">
-      <h2>Plato del Buen Comer</h2>
+  <!-- Calendario -->
+  <section class="card calendar-card">
 
-      <div class="circle-chart"></div>
+    <div class="calendar-header">
+      <button id="prevMonth">◀</button>
 
-      <div class="legend">
-        <p>🥬 Verduras y frutas</p>
-        <p>🌾 Cereales</p>
-        <p>🫘 Leguminosas</p>
-        <p>🍗 Origen animal</p>
-      </div>
-    </section>
+      <h2 id="monthYear"></h2>
 
-  </main>
+      <button id="nextMonth">▶</button>
+    </div>
+
+    <div class="weekdays">
+      <div>Dom</div>
+      <div>Lun</div>
+      <div>Mar</div>
+      <div>Mié</div>
+      <div>Jue</div>
+      <div>Vie</div>
+      <div>Sáb</div>
+    </div>
+
+    <div class="calendar-grid" id="calendar"></div>
+
+    <!-- MÉTRICAS -->
+
+<section class="card streak-card">
+
+  <h2>Tu constancia 🌟</h2>
+
+  <br>
+
+  <p id="rachaActual">
+    Racha actual: 0 días
+  </p>
+
+  <p id="diasRegistrados">
+    Días registrados: 0
+  </p>
+
+</section>
+
+
+<!-- DETALLES DEL DÍA -->
+
+<section class="card details-card">
+
+  <h2>Detalles del día 📅</h2>
+
+  <br>
+
+  <div id="detalleDia">
+
+    Selecciona un día del calendario.
+
+  </div>
+
+</section>
+
+
+<!-- ENCUESTA -->
+
+<section class="card survey-card">
+
+  <h2>Encuesta nutricional 📝</h2>
+
+  <br>
+
+  <form id="surveyForm">
+
+    <input
+      type="text"
+      id="persona"
+      placeholder="Nombre de la persona"
+      required
+    >
+
+    <input
+      type="text"
+      id="habito"
+      placeholder="Hábito alimenticio"
+      required
+    >
+
+    <button type="submit">
+      Guardar encuesta
+    </button>
+
+  </form>
+
+  <br>
+
+  <div id="encuestasGuardadas"></div>
+
+</section>
+  </section>
+
+  <!-- Gráfica -->
+  <section class="card chart-card">
+    <h2>Plato del Buen Comer</h2>
+
+    <div class="circle-chart"></div>
+
+    <div class="legend">
+      <p>🥬 Verduras y frutas</p>
+      <p>🌾 Cereales</p>
+      <p>🫘 Leguminosas</p>
+      <p>🍗 Origen animal</p>
+    </div>
+
+    <br>
+
+<a href="info.html" class="btn-link">
+  Más información 📊
+</a>
+  </section>
+<!-- TIPS Y NOTICIAS -->
+
+<section class="card news-card">
+
+  <h2>Tips y noticias nutricionales 🌱</h2>
+
+  <br>
+
+  <div class="topics">
+
+    <button class="topic-btn" onclick="filtrarTema('todos')">
+      Todos
+    </button>
+
+    <button class="topic-btn" onclick="filtrarTema('azucar')">
+      Azúcar 🍭
+    </button>
+
+    <button class="topic-btn" onclick="filtrarTema('grasas')">
+      Grasas 🥑
+    </button>
+
+    <button class="topic-btn" onclick="filtrarTema('hidratacion')">
+      Hidratación 💧
+    </button>
+
+  </div>
+
+  <br>
+
+  <div id="contenedorNoticias"></div>
+
+</section>
+</main>
+
+<script type="module" src="script.js"></script>
 
 </body>
 </html>

@@ -8,6 +8,7 @@ class NutriBotChatScreen extends StatefulWidget {
 }
 
 class _NutriBotChatScreenState extends State<NutriBotChatScreen> {
+
   final String apiKey = "";
   
   final String systemPrompt = "Eres NutriBot, un asistente virtual amigable, empatico y confiable especializado en salud general, alimentacion saludable y recetas nutritivas. Tu conocimiento se basa en las guias de la OMS. SIEMPRE aclara que no eres medico.";

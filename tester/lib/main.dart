@@ -1,8 +1,26 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
+import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'firebase_options.dart';
 
-void main() {
-  runApp(const WiseVeggieApp());
+import 'models/intake_provider.dart';
+import 'screens/home_screen.dart';
+import 'screens/auth_screen.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => IntakeProvider()),
+      ],
+      child: const WiseVeggieApp(),
+    ),
+  );
 }
 
 class WiseVeggieApp extends StatelessWidget {
@@ -12,337 +30,148 @@ class WiseVeggieApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Wise Veggie',
+      title: 'Wise Wigie',
       theme: ThemeData(
+        useMaterial3: true,
         fontFamily: 'Arial',
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF8EE4AF)),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF8EE4AF),
+          primary: const Color(0xFF2D6A4F),
+          secondary: const Color(0xFF8EE4AF),
+          surface: const Color(0xFFF0FFF0),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.white.withOpacity(0.8),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
       ),
-      // La app inicia en el Index (Login)
-      home: const IndexPage(),
+      
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              backgroundColor: Color(0xFFF0FFF0),
+              body: Center(
+                child: CircularProgressIndicator(color: Color(0xFF2D6A4F)),
+              ),
+            );
+          }
+          if (snapshot.hasData && snapshot.data != null) {
+            return const HomeScreen();
+          }
+          return const LoginSelector();
+        },
+      ),
     );
   }
 }
 
-// --- COMPONENTE REUTILIZABLE: FONDO CON GRADIENTE Y OVERLAY ---
-class SharedBackground extends StatelessWidget {
-  final Widget child;
-  const SharedBackground({super.key, required this.child});
+class LoginSelector extends StatelessWidget {
+  const LoginSelector({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          // Gradiente de fondo 
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFFD8FFD8), Color(0xFFB7F5C5), Color(0xFFE8FFE8)],
-              ),
-            ),
-          ),
-          // Imagen de fondo con opacidad y desenfoque (plaidgreen.png)
-          Opacity(
-            opacity: 0.12,
-            child: Container(
-              decoration: const BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage('assets/plaidgreen.png'), 
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-          ),
-          SafeArea(child: child),
-        ],
-      ),
-    );
-  }
-}
-
-// --- 1. INDEX PAGE (LOGIN) ---
-class IndexPage extends StatelessWidget {
-  const IndexPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return SharedBackground(
-      child: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(30),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(
-                width: 900,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.35),
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: Colors.white.withOpacity(0.2)),
-                ),
-                child: Column(
-                  children: [
-                    // Sección Logo
-                    Container(
-                      padding: const EdgeInsets.all(40),
-                      width: double.infinity,
-                      color: Colors.white.withOpacity(0.25),
-                      child: Column(
-                        children: [
-                          // Aquí mandamos llamar tu logo
-                          Image.asset(
-                            'assets/logoWV.png',
-                            width: 180,
-                            height: 180,
-                            fit: BoxFit.contain,
-                          ),
-                          const SizedBox(height: 10),
-                          const Text('WISE VEGGIE', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: 1)),
-                        ],
-                      ),
-                    ),
-                    // Formulario Login
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 50),
-                      child: Column(
-                        children: [
-                          const Text('INICIAR SESIÓN', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 30),
-                          _buildInput('Nombre de Usuario'),
-                          const SizedBox(height: 18),
-                          _buildInput('Contraseña', isPassword: true),
-                          const SizedBox(height: 25),
-                          _buildButton('ENTRAR', () {
-                            Navigator.push(context, MaterialPageRoute(builder: (context) => const BienvenidaPage()));
-                          }),
-                          const SizedBox(height: 25),
-                          const Text('Accede a tu cuenta para continuar.', textAlign: TextAlign.center),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => const RegistroPage()));
-                            },
-                            child: const Text('CREAR CUENTA', style: TextStyle(fontWeight: FontWeight.bold, decoration: TextDecoration.underline, color: Colors.black)),
-                          )
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// --- 2. REGISTRO PAGE (CREAR CUENTA) ---
-class RegistroPage extends StatelessWidget {
-  const RegistroPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return SharedBackground(
-      child: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Container(
-            padding: const EdgeInsets.all(30),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.35),
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: Column(
-              children: [
-                const Text('CREAR CUENTA', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 20),
-                _buildInput('Nombre de Usuario'),
-                const SizedBox(height: 10),
-                _buildInput('Correo Electrónico'),
-                const SizedBox(height: 10),
-                _buildInput('Edad'),
-                const SizedBox(height: 10),
-                _buildInput('Estatura'),
-                const SizedBox(height: 10),
-                _buildInput('Contraseña', isPassword: true),
-                const SizedBox(height: 20),
-                _buildButton('CREAR CUENTA', () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const BienvenidaPage()));
-                }),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// --- 3. BIENVENIDA PAGE ---
-class BienvenidaPage extends StatelessWidget {
-  const BienvenidaPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return SharedBackground(
-      child: Center(
-        child: Container(
-          width: 500,
-          margin: const EdgeInsets.all(20),
-          padding: const EdgeInsets.all(50),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.35),
-            borderRadius: BorderRadius.circular(30),
-          ),
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 25.0),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Tu logo en la página de bienvenida
-              Image.asset(
-                'assets/logoWV.png',
-                width: 140,
-                height: 140,
-                fit: BoxFit.contain,
+              Icon(Icons.eco, size: 80,
+                  color: Theme.of(context).colorScheme.primary),
+              const SizedBox(height: 10),
+              Text(
+                "Wise Wigie",
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
-              const SizedBox(height: 20),
-              const Text('¡Bienvenido!', style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold)),
-              const Text(
-                'Gracias por formar parte de Wise Veggie 🌱\nTu camino saludable comienza hoy.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 18),
-              ),
+              const Text("Tu guía nutricional inteligente",
+                  style: TextStyle(color: Colors.grey)),
+              const SizedBox(height: 50),
+              const Text("¿Cómo vas a ingresar hoy?",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
               const SizedBox(height: 30),
-              _buildButton('SIGUIENTE', () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const DashboardPage()));
-              }),
+
+              _buildRoleCard(context,
+                  title: "Soy Paciente",
+                  subtitle: "Registra tu ingesta y ve tu progreso",
+                  icon: Icons.person,
+                  color: const Color(0xFF2D6A4F),
+                  onTap: () => Navigator.push(context,
+                      MaterialPageRoute(
+                          builder: (_) => const AuthScreen(role: "Paciente")))),
+
+              _buildRoleCard(context,
+                  title: "Soy Nutricionista",
+                  subtitle: "Monitorea pacientes y asigna dietas",
+                  icon: Icons.monitor_heart,
+                  color: const Color(0xFF52B788),
+                  onTap: () => Navigator.push(context,
+                      MaterialPageRoute(
+                          builder: (_) => const AuthScreen(role: "Nutricionista")))),
+
+              _buildRoleCard(context,
+                  title: "Soy Familiar / Encargado",
+                  subtitle: "Alertas de consumo y estadísticas",
+                  icon: Icons.family_restroom,
+                  color: const Color(0xFF1B4332),
+                  onTap: () => Navigator.push(context,
+                      MaterialPageRoute(
+                          builder: (_) => const AuthScreen(role: "Familiar / Encargado")))),
             ],
           ),
         ),
       ),
     );
   }
-}
 
-// --- 4. DASHBOARD PAGE (INICIO) ---
-class DashboardPage extends StatelessWidget {
-  const DashboardPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return SharedBackground(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(25),
-        child: Column(
-          children: [
-            // Card de Bienvenida
-            _buildCard(
-              child: Column(
-                children: [
-                  const Text('¡Hola de nuevo! 🌱', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
-                  const Text('Te sugerimos registrar la comida de hoy.'),
-                  const SizedBox(height: 15),
-                  _buildButton('Registrar comida', () {}),
-                ],
-              ),
-            ),
-            const SizedBox(height: 25),
-            // Calendario (Simulado)
-            _buildCard(
-              child: Column(
-                children: [
-                  const Text('Registros anteriores', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 20),
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 5, mainAxisSpacing: 10, crossAxisSpacing: 10),
-                    itemCount: 30,
-                    itemBuilder: (context, index) => Container(
-                      decoration: BoxDecoration(color: const Color(0xFFDFF7DF), borderRadius: BorderRadius.circular(12)),
-                      child: Center(child: Text('${index + 1}', style: const TextStyle(fontWeight: FontWeight.bold))),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 25),
-            // Gráfica Plato del Buen Comer
-            _buildCard(
-              child: Column(
-                children: [
-                  const Text('Plato del Buen Comer', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 20),
-                  Container(
-                    width: 200,
-                    height: 200,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: SweepGradient(
-                        colors: [Color(0xFF7ED957), Color(0xFFF4D35E), Color(0xFFFF9F1C), Color(0xFF4EA8DE), Color(0xFF7ED957)],
-                        stops: [0.0, 0.25, 0.5, 0.75, 1.0],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text('🥬 Verduras | 🌾 Cereales | 🫘 Leguminosas'),
-                ],
-              ),
-            ),
-          ],
+  Widget _buildRoleCard(BuildContext context, {
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 20),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: color.withOpacity(0.2), width: 1),
+      ),
+      color: Colors.white,
+      child: ListTile(
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+        leading: CircleAvatar(
+          backgroundColor: color.withOpacity(0.1),
+          child: Icon(icon, color: color),
         ),
+        title: Text(title,
+            style: const TextStyle(
+                fontWeight: FontWeight.bold, fontSize: 18)),
+        subtitle: Text(subtitle, style: const TextStyle(fontSize: 13)),
+        trailing: const Icon(Icons.arrow_forward_ios,
+            size: 16, color: Colors.grey),
+        onTap: onTap,
       ),
     );
   }
-}
-
-// --- HELPERS DE UI ---
-
-Widget _buildInput(String hint, {bool isPassword = false}) {
-  return TextField(
-    obscureText: isPassword,
-    decoration: InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: const Color(0xFFBFEBB3).withOpacity(0.85),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-    ),
-  );
-}
-
-Widget _buildButton(String text, VoidCallback onPressed) {
-  return Container(
-    width: double.infinity,
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(30),
-      gradient: const LinearGradient(colors: [Color(0xFFB7EFC5), Color(0xFF8EE4AF)]),
-    ),
-    child: ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.transparent,
-        shadowColor: Colors.transparent,
-        padding: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-      ),
-      child: Text(text, style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16)),
-    ),
-  );
-}
-
-Widget _buildCard({required Widget child}) {
-  return Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(30),
-    decoration: BoxDecoration(
-      color: Colors.white.withOpacity(0.35),
-      borderRadius: BorderRadius.circular(25),
-      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10))],
-    ),
-    child: child,
-  );
 }

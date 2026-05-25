@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Panel Nutricional</title>
+
+  <link rel="stylesheet" href="style.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<div class="background-overlay"></div>
+
+<main class="dashboard">
+
+<section class="card welcome-card">
+
+  <h1>Panel nutricional 📊</h1>
+
+  <br>
+
+  <!-- FILTROS -->
+
+  <input
+    type="text"
+    id="paciente"
+    placeholder="Buscar paciente"
+  >
+
+  <br><br>
+
+  <select id="filtroTiempo">
+
+    <option value="dia">Hoy</option>
+
+    <option value="semana">Semana</option>
+
+    <option value="mes">Mes</option>
+
+  </select>
+
+</section>
+
+
+<!-- CALORÍAS -->
+
+<section class="card">
+
+  <h2>Consumo calórico 🔥</h2>
+
+  <canvas id="caloriasChart"></canvas>
+
+</section>
+
+
+<!-- MACRONUTRIENTES -->
+
+<section class="card">
+
+  <h2>Macronutrientes 🥑</h2>
+
+  <canvas id="macroChart"></canvas>
+
+</section>
+
+
+<!-- RECOMENDACIONES -->
+
+<section class="card">
+
+  <h2>Recomendaciones personalizadas 🌱</h2>
+
+  <textarea
+    id="recomendacion"
+    placeholder="Escribe una recomendación..."
+    rows="5"
+    style="
+      width:100%;
+      border:none;
+      border-radius:15px;
+      padding:15px;
+      resize:none;
+    "
+  ></textarea>
+
+  <br><br>
+
+  <button id="guardarRecomendacion">
+    Guardar recomendación
+  </button>
+
+</section>
+
+
+<!-- HISTORIAL -->
+
+<section class="card">
+
+  <h2>Historial de observaciones 📝</h2>
+
+  <div id="historial"></div>
+
+</section>
+
+
+<section class="card welcome-card">
+
+  <a href="inicio.html" class="btn-link">
+    ← Volver al inicio
+  </a>
+
+</section>
+
+</main>
+
+<script src="info.js"></script>
+
+</body>
+</html>

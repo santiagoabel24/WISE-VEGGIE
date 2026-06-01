@@ -1,29 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/meal_service.dart';
+import '../data/nutrition_database.dart';
 
-const Map<String, Map<String, double>> _nutritionDB = {
-  'manzana':      {'cal': 52,  'prot': 0.3, 'carb': 14,  'fat': 0.2, 'sugar': 10},
-  'plátano':      {'cal': 89,  'prot': 1.1, 'carb': 23,  'fat': 0.3, 'sugar': 12},
-  'naranja':      {'cal': 47,  'prot': 0.9, 'carb': 12,  'fat': 0.1, 'sugar': 9},
-  'pollo':        {'cal': 165, 'prot': 31,  'carb': 0,   'fat': 3.6, 'sugar': 0},
-  'arroz':        {'cal': 130, 'prot': 2.7, 'carb': 28,  'fat': 0.3, 'sugar': 0},
-  'frijoles':     {'cal': 127, 'prot': 9,   'carb': 23,  'fat': 0.5, 'sugar': 0.3},
-  'huevo':        {'cal': 155, 'prot': 13,  'carb': 1.1, 'fat': 11,  'sugar': 1.1},
-  'leche':        {'cal': 61,  'prot': 3.2, 'carb': 4.8, 'fat': 3.3, 'sugar': 5},
-  'pan':          {'cal': 265, 'prot': 9,   'carb': 49,  'fat': 3.2, 'sugar': 5},
-  'tortilla':     {'cal': 218, 'prot': 5.7, 'carb': 44,  'fat': 2.5, 'sugar': 0.5},
-  'atún':         {'cal': 116, 'prot': 26,  'carb': 0,   'fat': 1,   'sugar': 0},
-  'yogur':        {'cal': 59,  'prot': 3.5, 'carb': 5,   'fat': 3.3, 'sugar': 4},
-  'zanahoria':    {'cal': 41,  'prot': 0.9, 'carb': 10,  'fat': 0.2, 'sugar': 4.7},
-  'espinaca':     {'cal': 23,  'prot': 2.9, 'carb': 3.6, 'fat': 0.4, 'sugar': 0.4},
-  'aguacate':     {'cal': 160, 'prot': 2,   'carb': 9,   'fat': 15,  'sugar': 0.7},
-  'pasta':        {'cal': 131, 'prot': 5,   'carb': 25,  'fat': 1.1, 'sugar': 0.6},
-  'carne de res': {'cal': 250, 'prot': 26,  'carb': 0,   'fat': 15,  'sugar': 0},
-  'salmon':       {'cal': 208, 'prot': 20,  'carb': 0,   'fat': 13,  'sugar': 0},
-  'queso':        {'cal': 402, 'prot': 25,  'carb': 1.3, 'fat': 33,  'sugar': 0.5},
-  'avena':        {'cal': 389, 'prot': 17,  'carb': 66,  'fat': 7,   'sugar': 1},
-};
+// Use `nutritionDatabase`, `calculateNutrition` and helpers from
+// `lib/data/nutrition_database.dart` for nutritional data and conversions.
+
+String _normalize(String s) {
+  final map = {
+    'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u',
+    'Á': 'a', 'É': 'e', 'Í': 'i', 'Ó': 'o', 'Ú': 'u',
+    'ñ': 'n', 'Ñ': 'n', 'ü': 'u', 'Ü': 'u'
+  };
+  var out = s.toLowerCase().trim();
+  map.forEach((k, v) { out = out.replaceAll(k, v); });
+  return out;
+}
+
+/// Try to find the exact key in `nutritionDatabase` that matches [input].
+/// Returns the matching key from the database (preserving accents) or null.
+String? _findFoodKey(String input) {
+  final q = input.toLowerCase().trim();
+  if (q.isEmpty) return null;
+  if (nutritionDatabase.containsKey(q)) return q;
+  final normQ = _normalize(q);
+  // exact normalized match
+  for (final k in nutritionDatabase.keys) {
+    if (_normalize(k) == normQ) return k;
+  }
+  // normalized contains
+  for (final k in nutritionDatabase.keys) {
+    if (_normalize(k).contains(normQ)) return k;
+  }
+  return null;
+}
 
 class IntakeScreen extends StatefulWidget {
   const IntakeScreen({super.key});
@@ -34,11 +44,7 @@ class IntakeScreen extends StatefulWidget {
 
 class _IntakeScreenState extends State<IntakeScreen>
     with SingleTickerProviderStateMixin {
-  static const _verde      = Color(0xFF1A6B4A);
-  static const _verdeClaro = Color(0xFFE8F5EE);
-  static const _crema      = Color(0xFFFAF7F2);
-  static const _cafe       = Color(0xFF3D2B1F);
-  static const _cafeMedio  = Color(0xFF7A5C4A);
+  // Colores ahora provienen del tema (Theme.of(context)) para soportar modo oscuro
 
   final _formKey      = GlobalKey<FormState>();
   final _nameCtrl     = TextEditingController();
@@ -83,26 +89,32 @@ class _IntakeScreenState extends State<IntakeScreen>
       setState(() { _showSuggestions = false; _suggestions = []; });
       return;
     }
-    final matches = _nutritionDB.keys.where((k) => k.contains(query)).toList();
+    final matches = nutritionDatabase.keys.where((k) => k.toLowerCase().contains(query)).toList();
     setState(() { _suggestions = matches; _showSuggestions = matches.isNotEmpty; });
     _recalcPreview();
   }
 
   void _onQuantityChanged() => _recalcPreview();
 
-  void _recalcPreview() {
+  Future<void> _recalcPreview() async {
     final name = _nameCtrl.text.toLowerCase().trim();
     final qty  = double.tryParse(_quantityCtrl.text) ?? 0;
-    final data = _nutritionDB[name];
-    if (data != null && qty > 0) {
-      final f = qty / 100;
+    if (name.isEmpty || qty <= 0) {
+      if (!mounted) return;
+      setState(() { _foodFound = false; _previewCal = 0; _previewProt = 0; _previewCarb = 0; _previewFat = 0; _previewSugar = 0; });
+      return;
+    }
+
+    final calc = await calculateNutrition(name, qty, _selectedUnit);
+    if (!mounted) return;
+    if (calc != null) {
       setState(() {
         _foodFound    = true;
-        _previewCal   = data['cal']!   * f;
-        _previewProt  = data['prot']!  * f;
-        _previewCarb  = data['carb']!  * f;
-        _previewFat   = data['fat']!   * f;
-        _previewSugar = data['sugar']! * f;
+        _previewCal   = calc['cal'] ?? 0;
+        _previewProt  = calc['prot'] ?? 0;
+        _previewCarb  = calc['carb'] ?? 0;
+        _previewFat   = calc['fat'] ?? 0;
+        _previewSugar = calc['sugar'] ?? 0;
       });
     } else {
       setState(() { _foodFound = false; _previewCal = 0; _previewProt = 0; _previewCarb = 0; _previewFat = 0; _previewSugar = 0; });
@@ -120,11 +132,13 @@ class _IntakeScreenState extends State<IntakeScreen>
     final picked = await showTimePicker(
       context: context,
       initialTime: _selectedTime,
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(primary: _verde)),
-        child: child!,
-      ),
+      builder: (context, child) {
+        final primary = Theme.of(context).colorScheme.primary;
+        return Theme(
+          data: Theme.of(context).copyWith(colorScheme: ColorScheme.light(primary: primary)),
+          child: child!,
+        );
+      },
     );
     if (picked != null) setState(() => _selectedTime = picked);
   }
@@ -135,19 +149,19 @@ class _IntakeScreenState extends State<IntakeScreen>
 
     final name   = _nameCtrl.text.trim();
     final qty    = double.parse(_quantityCtrl.text);
-    final data   = _nutritionDB[name.toLowerCase()];
-    final f      = qty / 100;
+    final time   = _selectedTime.format(context);
+    final calc   = await calculateNutrition(name.toLowerCase(), qty, _selectedUnit);
 
     final record = MealRecord(
       name:     name,
       quantity: qty,
       unit:     _selectedUnit,
-      time:     _selectedTime.format(context),
-      calories: data != null ? data['cal']!   * f : _previewCal,
-      proteins: data != null ? data['prot']!  * f : _previewProt,
-      carbs:    data != null ? data['carb']!  * f : _previewCarb,
-      fats:     data != null ? data['fat']!   * f : _previewFat,
-      sugar:    data != null ? data['sugar']! * f : _previewSugar,
+      time:     time,
+      calories: calc != null ? (calc['cal'] ?? _previewCal) : _previewCal,
+      proteins: calc != null ? (calc['prot'] ?? _previewProt) : _previewProt,
+      carbs:    calc != null ? (calc['carb'] ?? _previewCarb) : _previewCarb,
+      fats:     calc != null ? (calc['fat'] ?? _previewFat) : _previewFat,
+      sugar:    calc != null ? (calc['sugar'] ?? _previewSugar) : _previewSugar,
       date:     DateTime.now(),
     );
 
@@ -161,7 +175,7 @@ class _IntakeScreenState extends State<IntakeScreen>
       _nameCtrl.clear();
       _quantityCtrl.clear();
       setState(() { _selectedTime = TimeOfDay.now(); _foodFound = false; _previewCal = 0; });
-      _showSnack('${record.name} registrado correctamente', _verde, icon: Icons.check_circle);
+      _showSnack('${record.name} registrado correctamente', Theme.of(context).colorScheme.primary, icon: Icons.check_circle);
     }
   }
 
@@ -190,12 +204,12 @@ class _IntakeScreenState extends State<IntakeScreen>
             title: Row(children: [
               Container(
                 width: 34, height: 34,
-                decoration: BoxDecoration(color: _verdeClaro, borderRadius: BorderRadius.circular(10)),
-                child: const Icon(Icons.edit_outlined, color: _verde, size: 18),
+                decoration: BoxDecoration(color: Theme.of(ctx).colorScheme.primary.withAlpha((0.12 * 255).round()), borderRadius: BorderRadius.circular(10)),
+                child: Icon(Icons.edit_outlined, color: Theme.of(ctx).colorScheme.primary, size: 18),
               ),
               const SizedBox(width: 10),
-              const Text('Editar registro',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: _cafe)),
+              Text('Editar registro',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Theme.of(ctx).colorScheme.onSurface)),
             ]),
             content: SizedBox(
               width: double.maxFinite,
@@ -213,7 +227,7 @@ class _IntakeScreenState extends State<IntakeScreen>
                       validator: (v) => (v == null || v.trim().isEmpty) ? 'Escribe el nombre' : null,
                     ),
                     const SizedBox(height: 12),
-                    Row(children: [
+                      Row(children: [
                       Expanded(
                         flex: 2,
                         child: TextFormField(
@@ -231,13 +245,18 @@ class _IntakeScreenState extends State<IntakeScreen>
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: DropdownButtonFormField<String>(
-                          value: selectedUnit,
-                          decoration: _inputDecoration(label: 'Unidad', hint: '', icon: Icons.straighten_outlined),
-                          items: ['g', 'ml', 'pza', 'taza', 'cda']
-                              .map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
-                          onChanged: (v) => setDS(() => selectedUnit = v!),
-                        ),
+                        child: Builder(builder: (_) {
+                          final name = nameCtrl.text.trim();
+                          final key = _findFoodKey(name);
+                          final units = key != null ? getValidUnits(key) : ['g'];
+                          if (!units.contains(selectedUnit)) selectedUnit = units.first;
+                          return DropdownButtonFormField<String>(
+                            initialValue: selectedUnit,
+                            decoration: _inputDecoration(label: 'Unidad', hint: '', icon: Icons.straighten_outlined),
+                            items: units.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
+                            onChanged: (v) => setDS(() => selectedUnit = v!),
+                          );
+                        }),
                       ),
                     ]),
                     const SizedBox(height: 16),
@@ -245,28 +264,32 @@ class _IntakeScreenState extends State<IntakeScreen>
                     Builder(builder: (_) {
                       final n = nameCtrl.text.toLowerCase().trim();
                       final q = double.tryParse(quantityCtrl.text) ?? 0;
-                      final d = _nutritionDB[n];
-                      final f = q > 0 ? q / 100 : 0.0;
-                      if (d != null && q > 0) {
-                        return Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: _verdeClaro,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: _verde.withOpacity(0.2)),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              _previewItem('Calorías', '${(d['cal']! * f).toStringAsFixed(0)} kcal'),
-                              _previewItem('Proteínas', '${(d['prot']! * f).toStringAsFixed(1)}g'),
-                              _previewItem('Carbos', '${(d['carb']! * f).toStringAsFixed(1)}g'),
-                              _previewItem('Azúcar', '${(d['sugar']! * f).toStringAsFixed(1)}g'),
-                            ],
-                          ),
-                        );
-                      }
-                      return const SizedBox.shrink();
+                      if (n.isEmpty || q <= 0) return const SizedBox.shrink();
+                      return FutureBuilder<Map<String, double>?>(
+                        future: calculateNutrition(n, q, selectedUnit),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData || snapshot.data == null) return const SizedBox.shrink();
+                          final calc = snapshot.data!;
+                          final cs = Theme.of(context).colorScheme;
+                          return Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: cs.primary.withAlpha((0.12 * 255).round()),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: cs.primary.withAlpha((0.2 * 255).round())),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                _previewItem('Calorías', '${(calc['cal'] ?? 0).toStringAsFixed(0)} kcal'),
+                                _previewItem('Proteínas', '${(calc['prot'] ?? 0).toStringAsFixed(1)}g'),
+                                _previewItem('Carbos', '${(calc['carb'] ?? 0).toStringAsFixed(1)}g'),
+                                _previewItem('Azúcar', '${(calc['sugar'] ?? 0).toStringAsFixed(1)}g'),
+                              ],
+                            ),
+                          );
+                        },
+                      );
                     }),
                   ],
                 ),
@@ -285,15 +308,14 @@ class _IntakeScreenState extends State<IntakeScreen>
                     setSS(() => isSaving = true);
                     final n = nameCtrl.text.trim();
                     final q = double.parse(quantityCtrl.text);
-                    final d = _nutritionDB[n.toLowerCase()];
-                    final f = q / 100;
+                    final calc = await calculateNutrition(n, q, selectedUnit);
                     final edited = meal.copyWith(
                       name: n, quantity: q, unit: selectedUnit,
-                      calories: d != null ? d['cal']!   * f : meal.calories,
-                      proteins: d != null ? d['prot']!  * f : meal.proteins,
-                      carbs:    d != null ? d['carb']!  * f : meal.carbs,
-                      fats:     d != null ? d['fat']!   * f : meal.fats,
-                      sugar:    d != null ? d['sugar']! * f : meal.sugar,
+                      calories: calc != null ? (calc['cal'] ?? meal.calories) : meal.calories,
+                      proteins: calc != null ? (calc['prot'] ?? meal.proteins) : meal.proteins,
+                      carbs:    calc != null ? (calc['carb'] ?? meal.carbs) : meal.carbs,
+                      fats:     calc != null ? (calc['fat'] ?? meal.fats) : meal.fats,
+                      sugar:    calc != null ? (calc['sugar'] ?? meal.sugar) : meal.sugar,
                     );
                     final error = await _mealService.updateMeal(edited);
                     if (!ctx.mounted) return;
@@ -301,11 +323,11 @@ class _IntakeScreenState extends State<IntakeScreen>
                     if (error != null) {
                       _showSnack(error, Colors.redAccent);
                     } else {
-                      _showSnack('Registro actualizado', _verde, icon: Icons.check_circle);
+                      _showSnack('Registro actualizado', Theme.of(ctx).colorScheme.primary, icon: Icons.check_circle);
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _verde, foregroundColor: Colors.white,
+                    backgroundColor: Theme.of(ctx).colorScheme.primary, foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     elevation: 0,
                   ),
@@ -326,8 +348,12 @@ class _IntakeScreenState extends State<IntakeScreen>
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = cs.primary;
+
     return Scaffold(
-      backgroundColor: _crema,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: StreamBuilder<List<MealRecord>>(
         stream: _historyView == 'today'
             ? _mealService.getTodayMeals()
@@ -345,12 +371,12 @@ class _IntakeScreenState extends State<IntakeScreen>
               SliverAppBar(
                 expandedHeight: 160,
                 pinned: true,
-                backgroundColor: _verde,
+                backgroundColor: primary,
                 flexibleSpace: FlexibleSpaceBar(
                   background: _buildHeader(totalCalories),
                 ),
-                title: const Text('Registro de Ingesta',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                title: Text('Registro de Ingesta',
+                    style: TextStyle(color: cs.onPrimary, fontWeight: FontWeight.w600)),
               ),
               SliverToBoxAdapter(
                 child: Padding(
@@ -384,10 +410,11 @@ class _IntakeScreenState extends State<IntakeScreen>
     final remaining = _dailyCalorieGoal - totalCalories;
     final isOver    = remaining < 0;
 
+    final cs = Theme.of(context).colorScheme;
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF1A6B4A), Color(0xFF2D9166)],
+          colors: [cs.primary, cs.secondary],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -400,21 +427,21 @@ class _IntakeScreenState extends State<IntakeScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('Calorías hoy', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                Text('Calorías hoy', style: TextStyle(color: cs.onPrimary.withAlpha((0.9 * 255).round()), fontSize: 12)),
                 Text(
                   '${totalCalories.toStringAsFixed(0)} / ${_dailyCalorieGoal.toInt()} kcal',
-                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: cs.onPrimary, fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ]),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: isOver ? Colors.redAccent.withOpacity(0.25) : Colors.white.withOpacity(0.2),
+                  color: isOver ? Colors.redAccent.withAlpha((0.25 * 255).round()) : cs.onPrimary.withAlpha((0.2 * 255).round()),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   isOver ? '+${(-remaining).toStringAsFixed(0)} kcal extra' : '${remaining.toStringAsFixed(0)} kcal restantes',
-                  style: TextStyle(color: isOver ? Colors.red[200] : Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
+                  style: TextStyle(color: isOver ? Colors.red[200] : cs.onPrimary, fontSize: 12, fontWeight: FontWeight.w500),
                 ),
               ),
             ],
@@ -449,16 +476,16 @@ class _IntakeScreenState extends State<IntakeScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFE2D9D0)),
-          boxShadow: [BoxShadow(color: _verde.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, 2))],
+          border: Border.all(color: Theme.of(context).dividerColor),
+          boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withAlpha((0.06 * 255).round()), blurRadius: 8, offset: const Offset(0, 2))],
         ),
         child: Column(children: [
           Text(emoji, style: const TextStyle(fontSize: 18)),
           const SizedBox(height: 2),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: _cafe)),
-          Text(label, style: const TextStyle(fontSize: 10, color: _cafeMedio)),
+          Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Theme.of(context).colorScheme.onSurface)),
+          Text(label, style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.75))),
         ]),
       ),
     );
@@ -470,13 +497,13 @@ class _IntakeScreenState extends State<IntakeScreen>
       children: [
         Text(
           _historyView == 'today' ? 'Historial de Hoy' : 'Historial Semanal',
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: _cafe),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface),
         ),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE2D9D0)),
+            border: Border.all(color: Theme.of(context).dividerColor),
           ),
           child: Row(children: [
             _toggleBtn('Hoy', 'today'),
@@ -495,7 +522,7 @@ class _IntakeScreenState extends State<IntakeScreen>
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: isSelected ? _verde : Colors.transparent,
+          color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Text(
@@ -503,7 +530,7 @@ class _IntakeScreenState extends State<IntakeScreen>
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: isSelected ? Colors.white : _cafeMedio,
+            color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface.withOpacity(0.75),
           ),
         ),
       ),
@@ -565,10 +592,13 @@ class _IntakeScreenState extends State<IntakeScreen>
     final isToday  = _isToday(date);
     final label    = isToday ? 'Hoy · ${_formatDate(date)}' : _formatDate(date);
 
+    final cs = Theme.of(context).colorScheme;
+    final primary = cs.primary;
+    final primaryLight = primary.withOpacity(0.12);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: isToday ? _verde : const Color(0xFF2D9166).withOpacity(0.12),
+        color: isToday ? primary : primaryLight,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -585,14 +615,14 @@ class _IntakeScreenState extends State<IntakeScreen>
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: isToday ? Colors.white : _cafe,
+                color: isToday ? cs.onPrimary : cs.onSurface,
               ),
             ),
           ]),
-          Container(
+            Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
             decoration: BoxDecoration(
-              color: isToday ? Colors.white.withOpacity(0.2) : _verdeClaro,
+              color: isToday ? cs.onPrimary.withOpacity(0.2) : primaryLight,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -600,7 +630,7 @@ class _IntakeScreenState extends State<IntakeScreen>
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
-                color: isToday ? Colors.white : _verde,
+                color: isToday ? cs.onPrimary : primary,
               ),
             ),
           ),
@@ -610,6 +640,9 @@ class _IntakeScreenState extends State<IntakeScreen>
   }
 
   Widget _buildMealCard(MealRecord meal) {
+    final cs = Theme.of(context).colorScheme;
+    final primary = cs.primary;
+    final primaryLight = primary.withOpacity(0.12);
     return Dismissible(
       key: Key('meal_${meal.id ?? meal.name}_${meal.date.millisecondsSinceEpoch}'),
       direction: DismissDirection.endToStart,
@@ -620,40 +653,40 @@ class _IntakeScreenState extends State<IntakeScreen>
         child: const Icon(Icons.delete_outline, color: Colors.white),
       ),
       onDismissed: (_) => _deleteRecord(meal),
-      child: GestureDetector(
+          child: GestureDetector(
         onTap: () => _editRecord(meal),
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE2D9D0)),
-            boxShadow: [BoxShadow(color: _verde.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+            border: Border.all(color: Theme.of(context).dividerColor),
+            boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
           ),
           child: Row(children: [
             Container(
               width: 44, height: 44,
-              decoration: BoxDecoration(color: _verdeClaro, borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(color: primaryLight, borderRadius: BorderRadius.circular(12)),
               child: const Center(child: Text('🍽️', style: TextStyle(fontSize: 20))),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(meal.name,
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: _cafe)),
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Theme.of(context).colorScheme.onSurface)),
                 const SizedBox(height: 2),
                 Text(
                   '${meal.quantity.toStringAsFixed(0)}${meal.unit} · ${meal.time}',
-                  style: const TextStyle(fontSize: 12, color: _cafeMedio),
+                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.75)),
                 ),
               ]),
             ),
-            const Icon(Icons.edit_outlined, size: 16, color: _cafeMedio),
+            Icon(Icons.edit_outlined, size: 16, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.75)),
             const SizedBox(width: 10),
             Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-              Text('${meal.calories.toStringAsFixed(0)}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: _verde)),
-              const Text('kcal', style: TextStyle(fontSize: 10, color: _cafeMedio)),
+                Text(meal.calories.toStringAsFixed(0),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: primary)),
+              Text('kcal', style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.75))),
             ]),
           ]),
         ),
@@ -662,11 +695,14 @@ class _IntakeScreenState extends State<IntakeScreen>
   }
 
   Widget _buildFormCard() {
+    final cs = Theme.of(context).colorScheme;
+    final primary = cs.primary;
+    final primaryLight = primary.withOpacity(0.12);
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: _verde.withOpacity(0.08), blurRadius: 16, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.08), blurRadius: 16, offset: const Offset(0, 4))],
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -676,12 +712,12 @@ class _IntakeScreenState extends State<IntakeScreen>
             Row(children: [
               Container(
                 width: 36, height: 36,
-                decoration: BoxDecoration(color: _verdeClaro, borderRadius: BorderRadius.circular(10)),
-                child: const Icon(Icons.add_circle_outline, color: _verde, size: 20),
+                decoration: BoxDecoration(color: primaryLight, borderRadius: BorderRadius.circular(10)),
+                child: Icon(Icons.add_circle_outline, color: primary, size: 20),
               ),
               const SizedBox(width: 10),
-              const Text('Registrar Alimento',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: _cafe)),
+              Text('Registrar Alimento',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface)),
             ]),
             const SizedBox(height: 16),
             _buildNameField(),
@@ -701,7 +737,7 @@ class _IntakeScreenState extends State<IntakeScreen>
               child: ElevatedButton(
                 onPressed: _isSaving ? null : _saveRecord,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _verde, foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   elevation: 0,
                 ),
@@ -731,14 +767,14 @@ class _IntakeScreenState extends State<IntakeScreen>
         decoration: _inputDecoration(label: 'Nombre del alimento', hint: 'Ej. manzana, pollo, arroz...', icon: Icons.restaurant_outlined),
         validator: (v) => (v == null || v.trim().isEmpty) ? 'Escribe el nombre del alimento' : null,
       ),
-      if (_showSuggestions)
+        if (_showSuggestions)
         Container(
           margin: const EdgeInsets.only(top: 4),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE2D9D0)),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8, offset: const Offset(0, 2))],
+            border: Border.all(color: Theme.of(context).dividerColor),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
           ),
           child: Column(
             children: _suggestions.map((food) => InkWell(
@@ -746,9 +782,9 @@ class _IntakeScreenState extends State<IntakeScreen>
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 child: Row(children: [
-                  const Icon(Icons.search, size: 16, color: _cafeMedio),
+                    Icon(Icons.search, size: 16, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.75)),
                   const SizedBox(width: 8),
-                  Text(food, style: const TextStyle(color: _cafe, fontSize: 14)),
+                    Text(food, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 14)),
                 ]),
               ),
             )).toList(),
@@ -772,11 +808,20 @@ class _IntakeScreenState extends State<IntakeScreen>
   }
 
   Widget _buildUnitDropdown() {
+    final name = _nameCtrl.text.trim();
+    final key = _findFoodKey(name);
+    // Si el alimento está en la base local, usamos sus unidades válidas.
+    // Si no está local, es un alimento USDA online y solo podemos calcularlo en gramos.
+    final units = key != null ? getValidUnits(key) : ['g'];
+    if (!units.contains(_selectedUnit)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _selectedUnit = units.first);
+      });
+    }
     return DropdownButtonFormField<String>(
-      value: _selectedUnit,
+      initialValue: _selectedUnit,
       decoration: _inputDecoration(label: 'Unidad', hint: '', icon: Icons.straighten_outlined),
-      items: ['g', 'ml', 'pza', 'taza', 'cda']
-          .map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
+      items: units.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
       onChanged: (v) => setState(() => _selectedUnit = v!),
     );
   }
@@ -788,40 +833,43 @@ class _IntakeScreenState extends State<IntakeScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: _crema,
+          color: Theme.of(context).inputDecorationTheme.fillColor ?? Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE2D9D0)),
+          border: Border.all(color: Theme.of(context).dividerColor),
         ),
         child: Row(children: [
-          const Icon(Icons.access_time_outlined, color: _verde, size: 20),
-          const SizedBox(width: 10),
-          const Text('Hora de consumo', style: TextStyle(color: _cafeMedio, fontSize: 13)),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(color: _verdeClaro, borderRadius: BorderRadius.circular(8)),
-            child: Text(_selectedTime.format(context),
-                style: const TextStyle(color: _verde, fontWeight: FontWeight.w600, fontSize: 14)),
-          ),
-        ]),
+            Icon(Icons.access_time_outlined, color: Theme.of(context).colorScheme.primary, size: 20),
+            const SizedBox(width: 10),
+            Text('Hora de consumo', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.75), fontSize: 13)),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
+              child: Text(_selectedTime.format(context),
+                  style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600, fontSize: 14)),
+            ),
+          ]),
       ),
     );
   }
 
   Widget _buildNutritionPreview() {
+    final cs = Theme.of(context).colorScheme;
+    final primary = cs.primary;
+    final primaryLight = Theme.of(context).brightness == Brightness.dark ? primary.withOpacity(0.12) : primary.withOpacity(0.12);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _verdeClaro,
+        color: primaryLight,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _verde.withOpacity(0.2)),
+        border: Border.all(color: primary.withOpacity(0.2)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Row(children: [
-          Icon(Icons.auto_awesome, color: _verde, size: 14),
-          SizedBox(width: 6),
+        Row(children: [
+          Icon(Icons.auto_awesome, color: primary, size: 14),
+          const SizedBox(width: 6),
           Text('Aporte nutricional estimado',
-              style: TextStyle(color: _verde, fontSize: 12, fontWeight: FontWeight.w600)),
+              style: TextStyle(color: primary, fontSize: 12, fontWeight: FontWeight.w600)),
         ]),
         const SizedBox(height: 10),
         Row(
@@ -839,8 +887,8 @@ class _IntakeScreenState extends State<IntakeScreen>
 
   Widget _previewItem(String label, String value) {
     return Column(children: [
-      Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: _cafe)),
-      Text(label, style: const TextStyle(fontSize: 10, color: _cafeMedio)),
+      Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Theme.of(context).colorScheme.onSurface)),
+      Text(label, style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.75))),
     ]);
   }
 
@@ -849,17 +897,17 @@ class _IntakeScreenState extends State<IntakeScreen>
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 36),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2D9D0)),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(children: [
         const Text('🥗', style: TextStyle(fontSize: 40)),
         const SizedBox(height: 10),
-        Text(msg, style: const TextStyle(color: _cafeMedio, fontSize: 14)),
+        Text(msg, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.75), fontSize: 14)),
         const SizedBox(height: 4),
         Text('¡Empieza registrando tu primer alimento!',
-            style: TextStyle(color: _cafeMedio.withOpacity(0.6), fontSize: 12)),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 12)),
       ]),
     );
   }
@@ -901,15 +949,16 @@ class _IntakeScreenState extends State<IntakeScreen>
   }
 
   InputDecoration _inputDecoration({required String label, required String hint, required IconData icon}) {
+    final cs = Theme.of(context).colorScheme;
     return InputDecoration(
       labelText: label, hintText: hint,
-      prefixIcon: Icon(icon, color: _verde, size: 20),
-      labelStyle: const TextStyle(color: _cafeMedio, fontSize: 13),
-      hintStyle: TextStyle(color: _cafeMedio.withOpacity(0.5), fontSize: 13),
-      filled: true, fillColor: _crema,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2D9D0))),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2D9D0))),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _verde, width: 1.5)),
+      prefixIcon: Icon(icon, color: cs.primary, size: 20),
+      labelStyle: TextStyle(color: cs.onSurface.withOpacity(0.75), fontSize: 13),
+      hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.5), fontSize: 13),
+      filled: true, fillColor: Theme.of(context).inputDecorationTheme.fillColor ?? Theme.of(context).cardColor,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Theme.of(context).dividerColor)),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Theme.of(context).dividerColor)),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: cs.primary, width: 1.5)),
       errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent)),
       focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),

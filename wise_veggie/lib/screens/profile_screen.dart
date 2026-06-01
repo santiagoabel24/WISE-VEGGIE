@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
+import '../providers/theme_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -9,15 +11,8 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  // Colores
-  static const _verde     = Color(0xFF1A6B4A);
-  static const _verdeClaro = Color(0xFFE8F5EE);
-  static const _cafe      = Color(0xFF3D2B1F);
-  static const _cafeMedio = Color(0xFF7A5C4A);
-  static const _crema     = Color(0xFFFAF7F2);
-
-  String _name  = 'Cargando...';
-  String _email = 'Cargando...';
+  String _name    = 'Cargando...';
+  String _email   = 'Cargando...';
   bool   _loading = true;
 
   @override
@@ -26,7 +21,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadUserData();
   }
 
-  // ── Cargar datos reales desde Firestore ──
   Future<void> _loadUserData() async {
     final data = await AuthService().getUserData();
     if (!mounted) return;
@@ -37,7 +31,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  // ── Cerrar sesión con confirmación ──
   Future<void> _logout() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -66,23 +59,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
-
-    if (confirm == true) {
-      await AuthService().logout();
-      // El StreamBuilder en main.dart redirige al login automáticamente
-    }
+    if (confirm == true) await AuthService().logout();
   }
 
   @override
   Widget build(BuildContext context) {
+    final cs     = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme  = context.watch<ThemeProvider>();
+
+    // Colores adaptativos según el modo
+    final verde      = cs.primary;
+    final verdeClaro = isDark ? cs.primary.withOpacity(0.15) : const Color(0xFFE8F5EE);
+    final bgCard     = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final textPri    = isDark ? Colors.white : const Color(0xFF3D2B1F);
+    final textSec    = isDark ? Colors.white60 : const Color(0xFF7A5C4A);
+
     return Scaffold(
-      backgroundColor: _crema,
       appBar: AppBar(
         title: const Text('Mi Cuenta',
             style: TextStyle(fontWeight: FontWeight.w600)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: _cafe,
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -96,44 +94,83 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Container(
                     width: 96, height: 96,
                     decoration: BoxDecoration(
-                      color: _verdeClaro,
+                      color: verdeClaro,
                       shape: BoxShape.circle,
-                      border: Border.all(color: _verde, width: 2),
+                      border: Border.all(color: verde, width: 2),
                     ),
-                    child: const Icon(Icons.person,
-                        size: 52, color: _verde),
+                    child: Icon(Icons.person, size: 52, color: verde),
                   ),
                   const SizedBox(height: 16),
 
                   // ── Nombre ──
                   Text(_name,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
-                          color: _cafe)),
+                          color: textPri)),
                   const SizedBox(height: 4),
 
                   // ── Email ──
                   Text(_email,
-                      style: const TextStyle(
-                          fontSize: 14, color: _cafeMedio)),
+                      style: TextStyle(fontSize: 14, color: textSec)),
 
                   const SizedBox(height: 32),
                   const Divider(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
 
-                  // ── Botón cerrar sesión ──
-                  ListTile(
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    tileColor: Colors.red.shade50,
-                    leading: const Icon(Icons.logout,
-                        color: Colors.redAccent),
-                    title: const Text('Cerrar sesión',
+                  // ── Toggle modo oscuro ──
+                  Container(
+                    decoration: BoxDecoration(
+                      color: bgCard,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                          color: isDark
+                              ? Colors.white12
+                              : const Color(0xFFE2D9D0)),
+                    ),
+                    child: ListTile(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      leading: Icon(
+                        isDark
+                            ? Icons.dark_mode_outlined
+                            : Icons.light_mode_outlined,
+                        color: verde,
+                      ),
+                      title: Text(
+                        'Modo oscuro',
                         style: TextStyle(
-                            color: Colors.redAccent,
-                            fontWeight: FontWeight.w600)),
-                    onTap: _logout,
+                            fontWeight: FontWeight.w500, color: textPri),
+                      ),
+                      trailing: Switch(
+                        value: theme.isDark,
+                        onChanged: (_) => theme.toggle(),
+                        activeThumbColor: verde,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // ── Cerrar sesión ──
+                  Container(
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.redAccent.withOpacity(0.1)
+                          : Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ListTile(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      leading: const Icon(Icons.logout,
+                          color: Colors.redAccent),
+                      title: const Text('Cerrar sesión',
+                          style: TextStyle(
+                              color: Colors.redAccent,
+                              fontWeight: FontWeight.w600)),
+                      onTap: _logout,
+                    ),
                   ),
                 ],
               ),

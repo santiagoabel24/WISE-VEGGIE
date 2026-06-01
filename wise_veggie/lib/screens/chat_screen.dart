@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class NutriBotChatScreen extends StatefulWidget {
+  const NutriBotChatScreen({super.key});
+
   @override
   _NutriBotChatScreenState createState() => _NutriBotChatScreenState();
 }
@@ -111,19 +113,21 @@ class _NutriBotChatScreenState extends State<NutriBotChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Colores basados en tu diseño web
-    const Color colorFondo = Color(0xFFFAF7F2); // Crema
-    const Color colorVerde = Color(0xFF1A6B4A);
-    const Color colorVerdeClaro = Color(0xFFE8F5EE);
-    const Color colorCafe = Color(0xFF3D2B1F);
+    // Usar colores del tema para respetar el modo oscuro/claro
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color colorFondo = Theme.of(context).scaffoldBackgroundColor;
+    final Color colorVerde = cs.primary;
+    final Color colorVerdeClaro = isDark ? cs.primary.withOpacity(0.12) : const Color(0xFFE8F5EE);
+    final Color colorCafe = isDark ? Colors.white70 : const Color(0xFF3D2B1F);
 
-    const String botLogoAsset = '../logoWV.png'; // Reemplaza con tu ruta y nombre de archivo
+    const String botLogoAsset = 'assets/logoWV.png';
 
     return Scaffold(
       backgroundColor: colorFondo,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 1,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         title: Row(
           children: [
             Image.asset(
@@ -132,7 +136,7 @@ class _NutriBotChatScreenState extends State<NutriBotChatScreen> {
               width: 60,
               fit: BoxFit.contain,
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Text(
               "VeggieBot",
               style: TextStyle(
@@ -196,9 +200,9 @@ class _NutriBotChatScreenState extends State<NutriBotChatScreen> {
 
           // Caja de texto inferior
           Container(
-            padding: EdgeInsets.all(12),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).cardColor,
               border: Border(top: BorderSide(color: Colors.grey.shade300)),
             ),
             child: SafeArea(
@@ -211,7 +215,7 @@ class _NutriBotChatScreenState extends State<NutriBotChatScreen> {
                         hintText: "Escribe tu pregunta...",
                         hintStyle: TextStyle(color: Colors.grey.shade400),
                         filled: true,
-                        fillColor: colorFondo,
+                        fillColor: Theme.of(context).inputDecorationTheme.fillColor ?? colorFondo,
                         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(20),

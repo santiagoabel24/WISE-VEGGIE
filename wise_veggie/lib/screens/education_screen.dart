@@ -14,11 +14,7 @@ class RecommendationsScreen extends StatefulWidget {
 }
 
 class _RecommendationsScreenState extends State<RecommendationsScreen> {
-  static const _verde      = Color(0xFF1A6B4A);
-  static const _verdeClaro = Color(0xFFE8F5EE);
-  static const _crema      = Color(0xFFFAF7F2);
-  static const _cafe       = Color(0xFF3D2B1F);
-  static const _cafeMedio  = Color(0xFF7A5C4A);
+  // Los colores específicos del tema se obtendrán en tiempo de ejecución desde Theme.of(context)
 
   static const int _cardCount = 6;
 
@@ -45,22 +41,29 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = cs.primary;
+    final primaryLight = isDark ? cs.primary.withOpacity(0.12) : const Color(0xFFE8F5EE);
+    final onSurface = cs.onSurface;
+    final onSurfaceMuted = cs.onSurface.withOpacity(0.75);
+
     return Scaffold(
-      backgroundColor: _crema,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           // ── AppBar ────────────────────────────────────────────────────────
           SliverAppBar(
             expandedHeight: 160,
             pinned: true,
-            backgroundColor: _verde,
+            backgroundColor: primary,
             automaticallyImplyLeading: false,
             flexibleSpace: FlexibleSpaceBar(background: _buildHeader()),
-            title: const Text('Recomendaciones',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            title: Text('Recomendaciones',
+                style: TextStyle(color: cs.onPrimary, fontWeight: FontWeight.w600)),
             actions: [
               IconButton(
-                icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+                icon: Icon(Icons.refresh_rounded, color: cs.onPrimary),
                 tooltip: 'Mezclar',
                 onPressed: _reshuffle,
               ),
@@ -75,7 +78,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
                 Expanded(
                   child: Text(
                     '${_displayed.length} consejos para ti hoy',
-                    style: const TextStyle(fontSize: 13, color: _cafeMedio),
+                    style: TextStyle(fontSize: 13, color: onSurfaceMuted),
                   ),
                 ),
                 GestureDetector(
@@ -83,17 +86,17 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: _verdeClaro,
+                      color: primaryLight,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: _verde.withOpacity(0.3)),
+                      border: Border.all(color: primary.withOpacity(0.3)),
                     ),
-                    child: const Row(children: [
-                      Icon(Icons.shuffle_rounded, size: 13, color: _verde),
-                      SizedBox(width: 4),
+                    child: Row(children: [
+                      Icon(Icons.shuffle_rounded, size: 13, color: primary),
+                      const SizedBox(width: 4),
                       Text('Mezclar',
                           style: TextStyle(
                               fontSize: 12,
-                              color: _verde,
+                              color: primary,
                               fontWeight: FontWeight.w600)),
                     ]),
                   ),
@@ -124,10 +127,11 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
   // HEADER
   // ─────────────────────────────────────────────
   Widget _buildHeader() {
+    final cs = Theme.of(context).colorScheme;
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF1A6B4A), Color(0xFF2D9166)],
+          colors: [cs.primary, cs.secondary],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -166,16 +170,17 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
   }
 
   Widget _headerChip(String emoji, String label) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.18),
+        color: cs.onPrimary.withOpacity(0.18),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(children: [
         Text(emoji, style: const TextStyle(fontSize: 12)),
         const SizedBox(width: 4),
-        Text(label, style: const TextStyle(color: Colors.white, fontSize: 11)),
+        Text(label, style: TextStyle(color: cs.onPrimary, fontSize: 11)),
       ]),
     );
   }
@@ -184,11 +189,17 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
   // TARJETA
   // ─────────────────────────────────────────────
   Widget _buildCard(Recommendation rec) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = cs.primary;
+    final primaryLight = isDark ? cs.primary.withOpacity(0.12) : const Color(0xFFE8F5EE);
+    final onSurface = cs.onSurface;
+    final onSurfaceMuted = cs.onSurface.withOpacity(0.75);
     return GestureDetector(
       onTap: () => _showDetail(rec),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+            color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: rec.categoryColor.withOpacity(0.18)),
           boxShadow: [
@@ -242,16 +253,16 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(rec.title,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          color: _cafe)),
+                    Text(rec.title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: onSurface)),
                   const SizedBox(height: 6),
-                  Text(
+                    Text(
                     rec.description,
-                    style: const TextStyle(
-                        fontSize: 12, color: _cafeMedio, height: 1.45),
+                    style: TextStyle(
+                      fontSize: 12, color: onSurfaceMuted, height: 1.45),
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -264,16 +275,16 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: _verdeClaro,
+                          color: primaryLight,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Row(children: [
-                          Icon(Icons.verified, size: 11, color: _verde),
-                          SizedBox(width: 4),
+                        child: Row(children: [
+                          Icon(Icons.verified, size: 11, color: primary),
+                          const SizedBox(width: 4),
                           Text('OMS',
                               style: TextStyle(
                                   fontSize: 10,
-                                  color: _verde,
+                                  color: primary,
                                   fontWeight: FontWeight.w600)),
                         ]),
                       ),
@@ -302,6 +313,11 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
   // DETALLE (bottom sheet)
   // ─────────────────────────────────────────────
   void _showDetail(Recommendation rec) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = cs.primary;
+    final primaryLight = isDark ? cs.primary.withOpacity(0.12) : const Color(0xFFE8F5EE);
+    final onSurface = cs.onSurface;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -309,9 +325,9 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
       builder: (_) => Container(
         constraints:
             BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.72),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(28),
             topRight: Radius.circular(28),
           ),
@@ -324,7 +340,9 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
               width: 40, height: 4,
               margin: const EdgeInsets.only(top: 12),
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.grey.shade700
+                    : Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -361,10 +379,10 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(rec.title,
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
-                              color: _cafe)),
+                              color: onSurface)),
                     ],
                   ),
                 ),
@@ -379,24 +397,24 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(rec.description,
-                        style: const TextStyle(
-                            fontSize: 15, color: _cafe, height: 1.6)),
+                        style: TextStyle(
+                            fontSize: 15, color: onSurface, height: 1.6)),
                     const SizedBox(height: 16),
                     // Fuente OMS
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: _verdeClaro,
+                        color: primaryLight,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: _verde.withOpacity(0.2)),
+                        border: Border.all(color: primary.withOpacity(0.2)),
                       ),
-                      child: const Row(children: [
-                        Icon(Icons.verified, size: 16, color: _verde),
-                        SizedBox(width: 8),
+                      child: Row(children: [
+                        Icon(Icons.verified, size: 16, color: primary),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'Información basada en guías de la OMS, FAO y consenso científico internacional.',
-                            style: TextStyle(fontSize: 12, color: _verde),
+                            style: TextStyle(fontSize: 12, color: primary),
                           ),
                         ),
                       ]),

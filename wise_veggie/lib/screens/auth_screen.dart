@@ -11,8 +11,7 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  static const _verde     = Color(0xFF2D6A4F);
-  static const _verdeSoft = Color(0xFFF0FFF0);
+  // Legacy color constants removed; use Theme.of(context).colorScheme
 
   final AuthService _authService = AuthService();
   final _formKey = GlobalKey<FormState>();
@@ -124,8 +123,10 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: _verdeSoft,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(25),
@@ -136,22 +137,22 @@ class _AuthScreenState extends State<AuthScreen> {
               // ── Título ──
               Text(
                 _isLogin ? "Bienvenido de nuevo" : "Crear cuenta",
-                style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: _verde),
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: cs.primary),
               ),
               const SizedBox(height: 4),
               Container(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _verde.withOpacity(0.1),
+                  color: cs.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   "Ingresando como: ${widget.role}",
-                  style: const TextStyle(color: _verde, fontSize: 13),
+                  style: TextStyle(color: cs.primary, fontSize: 13),
                 ),
               ),
               const SizedBox(height: 30),
@@ -300,7 +301,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 height: 52,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _verde,
+                    backgroundColor: cs.primary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
@@ -327,7 +328,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   _isLogin
                       ? "¿No tienes cuenta? Regístrate"
                       : "¿Ya tienes cuenta? Inicia sesión",
-                  style: const TextStyle(color: _verde),
+                  style: TextStyle(color: cs.primary),
                 ),
               ),
             ],
@@ -354,7 +355,7 @@ class _AuthScreenState extends State<AuthScreen> {
       validator: validator,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: _verde),
+        prefixIcon: Icon(icon, color: Theme.of(context).colorScheme.primary),
         suffixIcon: suffix,
       ),
     );

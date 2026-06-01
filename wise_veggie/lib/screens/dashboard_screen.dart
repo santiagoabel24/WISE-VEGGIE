@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/auth_service.dart';
 import '../services/meal_service.dart';
 import '../services/water_service.dart';
@@ -12,13 +11,18 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  // ── Colores del tema ──
-  static const _verde      = Color(0xFF1A6B4A);
-  static const _verdeClaro = Color(0xFFE8F5EE);
-  static const _verdeMedio = Color(0xFF2D9166);
-  static const _crema      = Color(0xFFFAF7F2);
-  static const _cafe       = Color(0xFF3D2B1F);
-  static const _cafeMedio  = Color(0xFF7A5C4A);
+  // (Legacy color constants removed; using Theme data instead)
+
+  // Theme-derived colors
+  bool get isDark => Theme.of(context).brightness == Brightness.dark;
+
+  Color get bgColor => Theme.of(context).scaffoldBackgroundColor;
+  Color get cardColor => Theme.of(context).cardColor;
+  Color get textColor => Theme.of(context).colorScheme.onSurface;
+  Color get textDimColor => Theme.of(context).colorScheme.onSurface.withOpacity(0.75);
+  Color get borderColor => Theme.of(context).dividerColor;
+  Color get highlightColor => Theme.of(context).colorScheme.primary.withOpacity(isDark ? 0.2 : 0.12);
+  Color get inactiveDayColor => Theme.of(context).dividerColor.withOpacity(0.08);
 
   // ── Servicios ──
   final _mealService  = MealService();
@@ -80,7 +84,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Stream de calorías reales
     return StreamBuilder<List<MealRecord>>(
       stream: _mealService.getTodayMeals(),
       builder: (context, mealSnap) {
@@ -90,20 +93,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final totalCarbs = meals.fold(0.0, (s, m) => s + m.carbs);
         final totalFats  = meals.fold(0.0, (s, m) => s + m.fats);
 
-        // Stream de agua en tiempo real
         return StreamBuilder<double>(
           stream: _waterService.streamTodayWater(),
           builder: (context, waterSnap) {
             final waterDrank = waterSnap.data ?? 0.0;
 
-            // Stream de días activos en tiempo real
             return StreamBuilder<Set<int>>(
               stream: _waterService.streamActiveDaysThisMonth(),
               builder: (context, daysSnap) {
                 final activeDays = daysSnap.data ?? {};
 
                 return Scaffold(
-                  backgroundColor: _crema,
+                  backgroundColor: bgColor, // ← Color dinámico
                   body: CustomScrollView(
                     slivers: [
                       SliverToBoxAdapter(
@@ -137,21 +138,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // ─────────────────────────────────────────────
-  // HEADER
+  // HEADER (Mantiene sus colores porque es verde oscuro)
   // ─────────────────────────────────────────────
   Widget _buildHeader(double calToday) {
     final remaining = calGoal - calToday;
     final isOver    = remaining < 0;
-
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF1A6B4A), Color(0xFF2D9166)],
+          colors: [cs.primary, cs.secondary ?? cs.primary.withOpacity(0.9)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.only(
+        borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(28),
           bottomRight: Radius.circular(28),
         ),
@@ -166,8 +167,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   Text(
                     '$_greeting, ${_loadingUser ? '...' : _userName}! $_greetingEmoji',
-                    style: const TextStyle(
-                        color: Colors.white,
+                    style: TextStyle(
+                        color: cs.onPrimary,
                         fontSize: 20,
                         fontWeight: FontWeight.bold),
                   ),
@@ -175,16 +176,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Text(
                     _formatDate(_today),
                     style: TextStyle(
-                        color: Colors.white.withOpacity(0.8), fontSize: 13),
+                        color: cs.onPrimary.withOpacity(0.85), fontSize: 13),
                   ),
                 ],
               ),
             ),
-            // Racha real desde Firestore
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: cs.onPrimary.withOpacity(0.18),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(children: [
@@ -195,14 +195,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     Text(
                       _loadingStreak ? '...' : '$_streakDays días',
-                      style: const TextStyle(
-                          color: Colors.white,
+                      style: TextStyle(
+                          color: cs.onPrimary,
                           fontWeight: FontWeight.bold,
                           fontSize: 14),
                     ),
                     Text('racha',
                         style: TextStyle(
-                            color: Colors.white.withOpacity(0.75),
+                            color: cs.onPrimary.withOpacity(0.75),
                             fontSize: 10)),
                   ],
                 ),
@@ -212,7 +212,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           const SizedBox(height: 20),
 
-          // Barra de calorías reales
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -288,39 +287,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardColor, // ← Dinámico
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE2D9D0)),
+          border: Border.all(color: borderColor), // ← Dinámico
           boxShadow: [
-            BoxShadow(
-              color: _verde.withOpacity(0.06),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
+            if (!isDark) // Quitamos la sombra en modo oscuro para que se vea más limpio
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.06),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
           ],
         ),
         child: Column(children: [
           Text(emoji, style: const TextStyle(fontSize: 22)),
           const SizedBox(height: 4),
           Text(value,
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold, fontSize: 16, color: _cafe)),
+              style: TextStyle(
+                  fontWeight: FontWeight.bold, fontSize: 16, color: textColor)), // ← Dinámico
           Text(sub,
-              style: const TextStyle(fontSize: 10, color: _cafeMedio),
+              style: TextStyle(fontSize: 10, color: textDimColor), // ← Dinámico
               textAlign: TextAlign.center),
           const SizedBox(height: 2),
-          Text(label,
-              style: const TextStyle(
-                  fontSize: 11,
-                  color: _verdeMedio,
-                  fontWeight: FontWeight.w500)),
+            Text(label,
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.w500)),
         ]),
       ),
     );
   }
 
   // ─────────────────────────────────────────────
-  // TARJETA DE AGUA — datos reales + botones +/-
+  // TARJETA DE AGUA
   // ─────────────────────────────────────────────
   Widget _buildWaterCard(double waterDrank) {
     final pct     = (waterDrank / waterGoal).clamp(0.0, 1.0);
@@ -335,8 +335,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(
                 '${waterDrank.toStringAsFixed(2)} de ${waterGoal.toStringAsFixed(1)} litros',
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 15, color: _cafe),
+                style: TextStyle(
+                    fontWeight: FontWeight.bold, fontSize: 15, color: textColor), // ← Dinámico
               ),
               const SizedBox(height: 8),
               ClipRRect(
@@ -344,7 +344,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: LinearProgressIndicator(
                   value: pct,
                   minHeight: 10,
-                  backgroundColor: _verdeClaro,
+                  backgroundColor: highlightColor, // ← Dinámico
                   valueColor:
                       const AlwaysStoppedAnimation(Color(0xFF38BDF8)),
                 ),
@@ -354,7 +354,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 pct >= 1.0
                     ? '¡Meta de hidratación alcanzada! 🎉'
                     : 'Te faltan ${(waterGoal - waterDrank).toStringAsFixed(2)}L para tu meta',
-                style: const TextStyle(fontSize: 11, color: _cafeMedio),
+                style: TextStyle(fontSize: 11, color: textDimColor), // ← Dinámico
               ),
             ]),
           ),
@@ -362,7 +362,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Container(
             width: 56, height: 56,
             decoration: BoxDecoration(
-              color: const Color(0xFFE0F7FF),
+              color: isDark ? const Color(0xFF0369A1).withOpacity(0.3) : const Color(0xFFE0F7FF), // ← Dinámico
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Center(
@@ -372,7 +372,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         const SizedBox(height: 14),
 
-        // Botones para añadir/quitar agua
         Row(children: [
           Expanded(
             child: OutlinedButton.icon(
@@ -380,8 +379,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               icon: const Icon(Icons.remove, size: 16),
               label: const Text('-1 vaso'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: _cafeMedio,
-                side: const BorderSide(color: Color(0xFFE2D9D0)),
+                foregroundColor: textDimColor, // ← Dinámico
+                side: BorderSide(color: borderColor), // ← Dinámico
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(vertical: 10),
@@ -404,8 +403,68 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
           ),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 56,
+            child: OutlinedButton(
+              onPressed: _showAddWaterDialog,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: textDimColor,
+                side: BorderSide(color: borderColor),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+              child: const Icon(Icons.edit, size: 18),
+            ),
+          ),
         ]),
       ]),
+    );
+  }
+
+  Future<void> _showAddWaterDialog() async {
+    final controller = TextEditingController();
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Añadir agua (ml)'),
+          content: TextField(
+            controller: controller,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              hintText: 'Ej. 250 (ml)',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final text = controller.text.trim();
+                if (text.isEmpty) return;
+                final value = double.tryParse(text.replaceAll(',', '.'));
+                if (value == null || value <= 0) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Introduce un número válido')),
+                    );
+                  }
+                  return;
+                }
+
+                final liters = value / 1000.0;
+                await _waterService.addWater(liters);
+                if (mounted) Navigator.of(context).pop();
+              },
+              child: const Text('Añadir'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -429,16 +488,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: _verdeClaro,
+            color: highlightColor, // ← Dinámico
             borderRadius: BorderRadius.circular(10),
           ),
-          child: const Row(children: [
-            Icon(Icons.info_outline, size: 14, color: _verde),
-            SizedBox(width: 6),
+          child: Row(children: [
+            Icon(Icons.info_outline, size: 14, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 6),
             Expanded(
               child: Text(
                 'La OMS recomienda que los carbohidratos representen el 55-75% de tu energía diaria.',
-                style: TextStyle(fontSize: 11, color: _verde),
+                style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.primary),
               ),
             ),
           ]),
@@ -465,16 +524,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
         const SizedBox(height: 4),
-        Text(label, style: const TextStyle(fontSize: 10, color: _cafeMedio)),
+        Text(label, style: TextStyle(fontSize: 10, color: textDimColor)), // ← Dinámico
         Text('/ ${goal.toInt()}g',
             style: TextStyle(
-                fontSize: 9, color: _cafeMedio.withOpacity(0.7))),
+                fontSize: 9, color: textDimColor.withOpacity(0.7))), // ← Dinámico
       ]),
     );
   }
 
   // ─────────────────────────────────────────────
-  // CALENDARIO — días activos reales desde Firestore
+  // CALENDARIO
   // ─────────────────────────────────────────────
   Widget _buildCalendarCard(Set<int> activeDays) {
     final daysInMonth =
@@ -494,10 +553,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     width: 36,
                     child: Text(d,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: _cafeMedio)),
+                            color: textDimColor)), // ← Dinámico
                   ))
               .toList(),
         ),
@@ -523,19 +582,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
               duration: const Duration(milliseconds: 200),
               decoration: BoxDecoration(
                 color: isToday
-                    ? _verde
-                    : isActive
-                        ? _verdeClaro
-                        : isFuture
-                            ? Colors.transparent
-                            : const Color(0xFFF0EBE6),
+                  ? Theme.of(context).colorScheme.primary
+                  : isActive
+                    ? highlightColor // ← Dinámico
+                    : isFuture
+                      ? Colors.transparent
+                      : inactiveDayColor, // ← Dinámico
                 shape: BoxShape.circle,
                 border: isToday
-                    ? null
-                    : Border.all(
-                        color: isActive
-                            ? _verdeMedio.withOpacity(0.3)
-                            : Colors.transparent),
+                  ? null
+                  : Border.all(
+                    color: isActive
+                      ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
+                      : Colors.transparent),
               ),
               child: Center(
                 child: Text(
@@ -545,12 +604,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     fontWeight:
                         isToday ? FontWeight.bold : FontWeight.normal,
                     color: isToday
-                        ? Colors.white
-                        : isActive
-                            ? _verde
-                            : isFuture
-                                ? _cafeMedio.withOpacity(0.3)
-                                : _cafeMedio,
+                      ? Theme.of(context).colorScheme.onPrimary
+                      : isActive
+                        ? Theme.of(context).colorScheme.primary // ← Dinámico
+                        : isFuture
+                          ? textDimColor.withOpacity(0.3) // ← Dinámico
+                          : textDimColor, // ← Dinámico
                   ),
                 ),
               ),
@@ -559,11 +618,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         const SizedBox(height: 14),
         Row(children: [
-          _legend(_verde, 'Hoy'),
+          _legend(Theme.of(context).colorScheme.primary, 'Hoy'),
           const SizedBox(width: 16),
-          _legend(_verdeClaro, 'Activo'),
+          _legend(highlightColor, 'Activo'), // ← Dinámico
           const SizedBox(width: 16),
-          _legend(const Color(0xFFF0EBE6), 'Sin registro'),
+          _legend(inactiveDayColor, 'Sin registro'), // ← Dinámico
         ]),
       ]),
     );
@@ -576,16 +635,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         decoration: BoxDecoration(
           color: color,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.grey.withOpacity(0.2)),
+          border: Border.all(color: borderColor), // ← Dinámico
         ),
       ),
       const SizedBox(width: 4),
-      Text(label, style: const TextStyle(fontSize: 11, color: _cafeMedio)),
+      Text(label, style: TextStyle(fontSize: 11, color: textDimColor)), // ← Dinámico
     ]);
   }
 
   // ─────────────────────────────────────────────
-  // CONSEJO OMS DEL DÍA
+  // CONSEJO OMS (Mantiene sus colores porque es fondo oscuro)
   // ─────────────────────────────────────────────
   Widget _buildTipCard() {
     final tips = [
@@ -597,18 +656,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ];
     final tip = tips[_today.day % tips.length];
 
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1A6B4A), Color(0xFF2D9166)],
+        gradient: LinearGradient(
+          colors: [cs.primary, cs.secondary ?? cs.primary.withOpacity(0.9)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: _verde.withOpacity(0.25),
+            color: cs.primary.withOpacity(0.25),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -618,7 +678,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Container(
           width: 52, height: 52,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
+            color: cs.onPrimary.withOpacity(0.18),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Center(
@@ -627,15 +687,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const SizedBox(width: 14),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Consejo OMS del día',
+            Text('Consejo OMS del día',
                 style: TextStyle(
-                    color: Colors.white70,
+                    color: cs.onPrimary.withOpacity(0.9),
                     fontSize: 11,
                     fontWeight: FontWeight.w500)),
             const SizedBox(height: 4),
             Text(tip['tip']!,
-                style: const TextStyle(
-                    color: Colors.white, fontSize: 13, height: 1.4)),
+                style: TextStyle(
+                    color: cs.onPrimary, fontSize: 13, height: 1.4)),
           ]),
         ),
       ]),
@@ -643,22 +703,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // ─────────────────────────────────────────────
-  // HELPERS
+  // HELPERS GLOBALES
   // ─────────────────────────────────────────────
   Widget _card({required Widget child}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor, // ← Dinámico
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2D9D0)),
+        border: Border.all(color: borderColor), // ← Dinámico
         boxShadow: [
-          BoxShadow(
-            color: _verde.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
-          ),
+          if (!isDark) // Quitamos la sombra en modo oscuro para que se vea más limpio
+            BoxShadow(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 3),
+            ),
         ],
       ),
       child: child,
@@ -670,7 +731,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       Container(
         width: 38, height: 38,
         decoration: BoxDecoration(
-          color: _verdeClaro,
+          color: highlightColor, // ← Dinámico
           borderRadius: BorderRadius.circular(10),
         ),
         child: Center(child: Text(emoji, style: const TextStyle(fontSize: 18))),
@@ -678,10 +739,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       const SizedBox(width: 10),
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(title,
-            style: const TextStyle(
-                fontWeight: FontWeight.w600, fontSize: 14, color: _cafe)),
+            style: TextStyle(
+                fontWeight: FontWeight.w600, fontSize: 14, color: textColor)), // ← Dinámico
         Text(subtitle,
-            style: const TextStyle(fontSize: 11, color: _cafeMedio)),
+            style: TextStyle(fontSize: 11, color: textDimColor)), // ← Dinámico
       ]),
     ]);
   }

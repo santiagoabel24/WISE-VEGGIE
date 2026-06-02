@@ -8,172 +8,111 @@
 </head>
 <body>
 
-<div class="background-overlay"></div>
+  <div class="background-overlay"></div>
 
-<main class="dashboard">
+  <main class="dashboard">
 
-  <!-- Bienvenida -->
-  <section class="card welcome-card">
-    <h1>¡Hola de nuevo! 🌱</h1>
+    <section class="card welcome-card">
+      <h1>¡Hola de nuevo! 🌱</h1>
+      <p>Te sugerimos registrar la comida de hoy para seguir cuidando tu alimentación.</p>
+      <a href="comida.html">
+        <button>🍎 Registrar comida ₊˚⊹</button>
+      </a>
+    </section>
 
-    <p id="fechaActual"></p>
+    <section class="card water-card" style="border-left: 5px solid #4ea8de;">
+      <h2>💧 Registro de Agua Natural</h2>
+      <p style="color: #666; margin-bottom: 15px;">Mantente hidratado hoy. Meta recomendada: 2 Litros.</p>
+      
+      <div style="text-align: center; margin: 20px 0;">
+        <span id="contadorAgua" style="font-size: 2.5rem; font-weight: bold; color: #005088;">0.00</span> 
+        <span style="font-size: 1.5rem; color: #005088; font-weight: bold;">L</span>
+      </div>
 
-    <a href="registro.html" class="btn-link">
-  Registrar alimento 🍎
-    </a>
-  </section>
+      <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
+        <button id="btnVasoAgua" style="background: #4ea8de; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; flex: 1;">
+          +250 ml 🥛
+        </button>
+        <button id="btnBotellaAgua" style="background: #005088; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; flex: 1;">
+          +500 ml 🫙
+        </button>
+      </div>
 
-  <!-- Calendario -->
-  <section class="card calendar-card">
+      <button id="btnReiniciarAgua" style="background: transparent; color: #999; border: 1px dashed #ccc; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.8rem; width: 100%;">
+        Reiniciar contador de hoy
+      </button>
+    </section>
 
-    <div class="calendar-header">
-      <button id="prevMonth">◀</button>
+    <section class="card calendar-card">
+      <div class="calendar-header">
+        <button id="prevMonth">◀</button>
+        <h2 id="monthYear">Mes Año</h2>
+        <button id="nextMonth">▶</button>
+      </div>
 
-      <h2 id="monthYear"></h2>
+      <div class="weekdays">
+        <div>Do</div><div>Lu</div><div>Ma</div><div>Mi</div><div>Ju</div><div>Vi</div><div>Sá</div>
+      </div>
 
-      <button id="nextMonth">▶</button>
-    </div>
+      <div id="calendar" class="calendar-grid"></div>
+      
+      <div id="detalleDia" style="margin-top: 15px;"></div>
+    </section>
+    <section class="card chart-card">
+      <h2>Plato del Buen Comer</h2>
+      <div class="circle-chart"></div>
+    </section>
 
-    <div class="weekdays">
-      <div>Dom</div>
-      <div>Lun</div>
-      <div>Mar</div>
-      <div>Mié</div>
-      <div>Jue</div>
-      <div>Vie</div>
-      <div>Sáb</div>
-    </div>
+    <section class="card news-card" style="grid-column: 1 / 3; border-top: 4px solid #1a6b4a;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+        <h2>📚 Artículos y Lecturas Recomendadas</h2>
+      </div>
 
-    <div class="calendar-grid" id="calendar"></div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+        
+        <div class="card-articulo" style="background: rgba(255,255,255,0.6); padding: 20px; border-radius: 18px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
+          <div>
+            <span style="background: #dff7df; color: #2e5a36; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold;">Proteínas</span>
+            <h3 style="margin: 12px 0 8px 0; color: #333; font-size: 1.15rem;">Proteínas veganas completas: 13 opciones de origen vegetal</h3>
+            <p style="color: #666; font-size: 0.9rem; line-height: 1.4; margin-bottom: 15px;">Descubre cómo conseguir proteínas sin dañar seres vivos.</p>
+          </div>
+          <a href="https://www.healthline.com/nutrition/complete-protein-for-vegans" style="text-decoration: none; margin-top: auto;">
+            <button type="button" style="padding: 10px 20px; font-size: 0.9rem; width: 100%;">Leer Artículo ➔</button>
+          </a>
+        </div>
 
-    <!-- MÉTRICAS -->
+        <div class="card-articulo" style="background: rgba(255,255,255,0.6); padding: 20px; border-radius: 18px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
+          <div>
+            <span style="background: #e0f2fe; color: #0369a1; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold;">Hidratación</span>
+            <h3 style="margin: 12px 0 8px 0; color: #333; font-size: 1.15rem;">Hidratación y metabolismo: cómo beber agua puede aumentar la quema de calorías.</h3>
+            <p style="color: #666; font-size: 0.9rem; line-height: 1.4; margin-bottom: 15px;">¿Sabías que beber suficiente agua natural optimiza la digestión de la fibra vegetal?</p>
+          </div>
+          <a href="https://www.waterh.com/blogs/news/hydration-and-your-metabolism-how-drinking-water-can-boost-your-calorie-burn" style="text-decoration: none; margin-top: auto;">
+            <button type="button" style="padding: 10px 20px; font-size: 0.9rem; width: 100%; background: linear-gradient(to right, #bae6fd, #7dd3fc);">Leer Artículo ➔</button>
+          </a>
+        </div>
 
-<section class="card streak-card">
+        <div class="card-articulo" style="background: rgba(255,255,255,0.6); padding: 20px; border-radius: 18px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
+          <div>
+            <span style="background: #fef3c7; color: #b45309; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold;">Micronutrientes</span>
+            <h3 style="margin: 12px 0 8px 0; color: #333; font-size: 1.15rem;">Vitamina B12 y Hierro: Guía Práctica</h3>
+            <p style="color: #666; font-size: 0.9rem; line-height: 1.4; margin-bottom: 15px;">La vitamina B12 y el hierro son una combinación ideal: descubre por qué.</p>
+          </div>
+          <a href="https://int.livhospital.com/can-you-take-b12-and-iron-together-amazing/" style="text-decoration: none; margin-top: auto;">
+            <button type="button" style="padding: 10px 20px; font-size: 0.9rem; width: 100%; background: linear-gradient(to right, #fef08a, #fde047);">Leer Artículo ➔</button>
+          </a>
+        </div>
 
-  <h2>Tu constancia 🌟</h2>
+      </div>
+    </section>
 
-  <br>
+  </main>
 
-  <p id="rachaActual">
-    Racha actual: 0 días
-  </p>
+  <a href="chat.html" class="boton-flotante-chat">
+    💬 NutriBot IA
+  </a>
 
-  <p id="diasRegistrados">
-    Días registrados: 0
-  </p>
-
-</section>
-
-
-<!-- DETALLES DEL DÍA -->
-
-<section class="card details-card">
-
-  <h2>Detalles del día 📅</h2>
-
-  <br>
-
-  <div id="detalleDia">
-
-    Selecciona un día del calendario.
-
-  </div>
-
-</section>
-
-
-<!-- ENCUESTA -->
-
-<section class="card survey-card">
-
-  <h2>Encuesta nutricional 📝</h2>
-
-  <br>
-
-  <form id="surveyForm">
-
-    <input
-      type="text"
-      id="persona"
-      placeholder="Nombre de la persona"
-      required
-    >
-
-    <input
-      type="text"
-      id="habito"
-      placeholder="Hábito alimenticio"
-      required
-    >
-
-    <button type="submit">
-      Guardar encuesta
-    </button>
-
-  </form>
-
-  <br>
-
-  <div id="encuestasGuardadas"></div>
-
-</section>
-  </section>
-
-  <!-- Gráfica -->
-  <section class="card chart-card">
-    <h2>Plato del Buen Comer</h2>
-
-    <div class="circle-chart"></div>
-
-    <div class="legend">
-      <p>🥬 Verduras y frutas</p>
-      <p>🌾 Cereales</p>
-      <p>🫘 Leguminosas</p>
-      <p>🍗 Origen animal</p>
-    </div>
-
-    <br>
-
-<a href="info.html" class="btn-link">
-  Más información 📊
-</a>
-  </section>
-<!-- TIPS Y NOTICIAS -->
-
-<section class="card news-card">
-
-  <h2>Tips y noticias nutricionales 🌱</h2>
-
-  <br>
-
-  <div class="topics">
-
-    <button class="topic-btn" onclick="filtrarTema('todos')">
-      Todos
-    </button>
-
-    <button class="topic-btn" onclick="filtrarTema('azucar')">
-      Azúcar 🍭
-    </button>
-
-    <button class="topic-btn" onclick="filtrarTema('grasas')">
-      Grasas 🥑
-    </button>
-
-    <button class="topic-btn" onclick="filtrarTema('hidratacion')">
-      Hidratación 💧
-    </button>
-
-  </div>
-
-  <br>
-
-  <div id="contenedorNoticias"></div>
-
-</section>
-</main>
-
-<script type="module" src="script.js"></script>
+  <script type="module" src="script.js"></script>
 
 </body>
 </html>

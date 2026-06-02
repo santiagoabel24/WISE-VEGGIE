@@ -1,67 +1,149 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registrar alimento</title>
+// ==========================================
+// ELEMENTOS DEL DOM
+// ==========================================
+const inputBuscar = document.getElementById("inputBuscar");
+const btnBuscar = document.getElementById("btnBuscar");
+const listaResultados = document.getElementById("listaResultados");
+const form = document.getElementById("foodForm");
+const productoSeleccionadoTxt = document.getElementById("productoSeleccionado");
+const contador = document.getElementById("contadorCalorias");
+const resultado = document.getElementById("resultado");
 
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
+// Variables globales para retener el alimento seleccionado temporalmente
+let alimentoSeleccionado = null;
+let caloriasTotales = Number(localStorage.getItem("caloriasHoy")) || 0;
+contador.innerText = `Calorías de hoy: ${caloriasTotales.toFixed(1)} kcal`;
 
-<div class="background-overlay"></div>
+// ==========================================
+// EVENTO: BUSCAR EN LA API
+// ==========================================
+btnBuscar.addEventListener("click", buscarAlimentoAPI);
+inputBuscar.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") buscarAlimentoAPI();
+});
 
-<main class="dashboard">
+function buscarAlimentoAPI() {
+    const texto = inputBuscar.value.trim();
+    if (!texto) {
+        alert("Escribe algo para buscar 🍎");
+        return;
+    }
 
-<section class="card welcome-card">
+    listaResultados.innerHTML = "<p style='color: white;'>Buscando en la base de datos...</p>";
 
-    <h1>Registrar alimento 🌱</h1>
+    // URL de la API de Open Food Facts filtrada para México/Español y comida
+    const url = `https://mx.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(texto)}&search_simple=1&action=process&json=1&page_size=5`;
 
-    <form id="foodForm">
+    // Fetch hace la petición HTTP asíncrona a internet
+    fetch(url)
+        .then(response => response.json()) // Convierte la respuesta en un objeto JS readable
+        .then(data => {
+            listaResultados.innerHTML = "";
+            
+            if (!data.products || data.products.length === 0) {
+                listaResultados.innerHTML = "<p style='color: white;'>No se encontraron productos. ¡Intenta con otra palabra!</p>";
+                return;
+            }
 
-        <input
-            type="text"
-            id="nombre"
-            placeholder="Nombre del alimento"
-            required
-        >
+            // Iteramos los productos devueltos por la API (máximo 5)
+            data.products.forEach(producto => {
+                // Open Food Facts da los nutrientes por cada 100g de producto
+                const nutris = producto.nutriments;
+                const kcal100g = nutris["energy-kcal_100g"] || nutris["energy-kcal"] || 0;
+                const prot100g = nutris["proteins_100g"] || 0;
+                const carbs100g = nutris["carbohydrates_100g"] || 0;
+                const grasas100g = nutris["fat_100g"] || 0;
 
-        <input
-            type="number"
-            id="cantidad"
-            placeholder="Cantidad consumida (gramos)"
-            required
-        >
+                // Creamos un botón visual para cada producto encontrado
+                const item = document.createElement("div");
+                item.style.background = "rgba(255, 255, 255, 0.2)";
+                item.style.padding = "10px";
+                item.style.margin = "5px 0";
+                item.style.borderRadius = "5px";
+                item.style.cursor = "pointer";
+                item.style.color = "white";
+                item.innerHTML = `<strong>${producto.product_name || "Producto Genérico"}</strong><br><small>${kcal100g} kcal por cada 100g</small>`;
 
-        <input
-            type="time"
-            id="hora"
-            required
-        >
+                // Al hacer clic en un resultado, se "selecciona" ese alimento
+                item.addEventListener("click", () => {
+                    alimentoSeleccionado = {
+                        nombre: producto.product_name || texto,
+                        kcal100g,
+                        prot100g,
+                        carbs100g,
+                        grasas100g
+                    };
+                    
+                    // Mostrar el formulario para ingresar los gramos consumidos
+                    productoSeleccionadoTxt.innerText = `Seleccionado: ${alimentoSeleccionado.nombre}`;
+                    form.style.display = "block";
+                    listaResultados.innerHTML = ""; // Limpiamos la lista
+                });
 
-        <button type="submit">
-            Guardar alimento ✨
-        </button>
+                listaResultados.appendChild(item);
+            });
+        })
+        .catch(error => {
+            console.error("Error al conectar con la API:", error);
+            listaResultados.innerHTML = "<p style='color: red;'>Error de red al conectar con la API.</p>";
+        });
+}
 
-    </form>
+// ==========================================
+// EVENTO: GUARDAR EN LOCALSTORAGE
+// ==========================================
+form.addEventListener("submit", (e) => {
+    e.preventDefault();
 
-    <div id="resultado"></div>
+    const cantidad = Number(document.getElementById("cantidad").value); // Gramos que comió
+    const hora = document.getElementById("hora").value;
 
-    <h2 id="contadorCalorias">
-        Calorías de hoy: 0 kcal
-    </h2>
+    if (!alimentoSeleccionado || !cantidad || !hora) {
+        alert("Por favor completa los gramos y la hora ⏰");
+        return;
+    }
 
-    <br>
+    // REGLA DE TRES: Los datos de la API son por cada 100g, calculamos lo consumido real:
+    const factor = cantidad / 100;
+    const caloriasCalculadas = alimentoSeleccionado.kcal100g * factor;
+    const proteinaCalculada = alimentoSeleccionado.prot100g * factor;
+    const carbohidratosCalculados = alimentoSeleccionado.carbs100g * factor;
+    const grasaCalculada = alimentoSeleccionado.grasas100g * factor;
 
-    <a href="inicio.html" class="btn-link">
-        ← Volver al inicio
-    </a>
+    // Actualizar contador del día
+    caloriasTotales += caloriasCalculadas;
+    localStorage.setItem("caloriasHoy", caloriasTotales);
 
-</section>
+    // Guardar en el arreglo de registros para que INFO.JS dibuje los gráficos
+    const registros = JSON.parse(localStorage.getItem("registros")) || [];
+    registros.push({
+        nombre: alimentoSeleccionado.nombre,
+        cantidad: cantidad,
+        hora: hora,
+        calorias: caloriasCalculadas,
+        proteina: proteinaCalculada,
+        carbohidratos: carbohidratosCalculados,
+        grasa: grasaCalculada,
+        fecha: new Date().toISOString().split("T")[0]
+    });
+    localStorage.setItem("registros", JSON.stringify(registros));
 
-</main>
+    // Mostrar éxito en pantalla
+    resultado.innerHTML = `
+        <div class="card" style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 15px; margin-top: 15px; color: #333;">
+            <h3 style="color: #2e5a36;">✅ ¡Registrado con éxito!</h3>
+            <p><strong>${alimentoSeleccionado.nombre}</strong></p>
+            <p>🔥 Calorías: ${caloriasCalculadas.toFixed(1)} kcal</p>
+            <p>💪 Proteínas: ${proteinaCalculada.toFixed(1)} g</p>
+            <p>🌾 Carbs: ${carbohidratosCalculados.toFixed(1)} g</p>
+            <p>🥑 Grasas: ${grasaCalculada.toFixed(1)} g</p>
+        </div>
+    `;
 
-<script type="module" src="registro.js"></script>
-
-</body>
-</html>
+    // Resetear interfaz
+    contador.innerText = `Calorías de hoy: ${caloriasTotales.toFixed(1)} kcal`;
+    form.reset();
+    form.style.display = "none";
+    inputBuscar.value = "";
+    alimentoSeleccionado = null;
+});

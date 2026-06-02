@@ -3,65 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registrar alimento</title>
-
+    <title>Wise Veggie - Registrarse</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="background-overlay"></div>
+    <div class="background-overlay"></div>
 
-<main class="dashboard">
+    <main class="container">
+        <section class="logo-box">
+            <img src="logoWV.png" alt="Logo Wise Veggie" class="logo">
+            <h1>WISE VEGGIE</h1>
+        </section>
 
-<section class="card welcome-card">
+        <section class="login-card">
+            <h2>CREAR CUENTA</h2>
+            
+            <form action="bienvenida.html">
+    <input type="text" name="username" id="reg-name" placeholder="Nombre Completo" required>
+    <input type="email" name="email" id="reg-email" placeholder="Correo Electrónico" required>
+    <input type="password" name="password" id="reg-password" placeholder="Contraseña" required>
+    <button type="submit">REGISTRARME</button>
+</form>
 
-    <h1>Registrar alimento 🌱</h1>
-
-    <form id="foodForm">
-
-        <input
-            type="text"
-            id="nombre"
-            placeholder="Nombre del alimento"
-            required
-        >
-
-        <input
-            type="number"
-            id="cantidad"
-            placeholder="Cantidad consumida (gramos)"
-            required
-        >
-
-        <input
-            type="time"
-            id="hora"
-            required
-        >
-
-        <button type="submit">
-            Guardar alimento ✨
-        </button>
-
-    </form>
-
-    <div id="resultado"></div>
-
-    <h2 id="contadorCalorias">
-        Calorías de hoy: 0 kcal
-    </h2>
-
-    <br>
-
-    <a href="inicio.html" class="btn-link">
-        ← Volver al inicio
-    </a>
-
-</section>
-
-</main>
-
-<script type="module" src="registro.js"></script>
+            <p class="extra-text">¿Ya tienes una cuenta?</p>
+            <a href="index.html" class="link-create">INICIAR SESIÓN</a>
+        </section>
+    </main>
 
 </body>
 </html>

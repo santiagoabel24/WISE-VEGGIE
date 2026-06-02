@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NutriBot — Tu Asistente de Salud y Nutrición</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --verde: #1a6b4a;
+    --verde-claro: #e8f5ee;
+    --verde-medio: #2d9166;
+    --crema: #faf7f2;
+    --cafe: #3d2b1f;
+    --cafe-claro: #7a5c4a;
+    --borde: #e2d9d0;
+    --blanco: #ffffff;
+    --sombra: rgba(26,107,74,0.10);
+    --radio: 18px;
+    --radio-sm: 10px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--crema);
+    color: var(--cafe);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    background: var(--blanco);
+    border-bottom: 1px solid var(--borde);
+    padding: 0 2rem;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: var(--verde);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .logo-text {
+    font-family: 'Fraunces', serif;
+    font-size: 20px; font-weight: 600;
+    color: var(--verde); letter-spacing: -0.3px;
+  }
+  .header-badge {
+    font-size: 11px;
+    background: var(--verde-claro);
+    color: var(--verde);
+    padding: 4px 12px; border-radius: 20px; font-weight: 500;
+  }
+
+  .hero {
+    padding: 3.5rem 2rem 2rem;
+    text-align: center;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  .hero h1 {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(2rem, 5vw, 2.8rem);
+    font-weight: 600; color: var(--cafe);
+    line-height: 1.2; margin-bottom: 1rem;
+  }
+  .hero h1 span { color: var(--verde); }
+  .hero p {
+    font-size: 15px; color: var(--cafe-claro);
+    line-height: 1.7; margin-bottom: 1.5rem; font-weight: 300;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 2rem; }
+  .chip {
+    font-size: 12px; padding: 5px 14px;
+    border-radius: 20px; border: 1px solid var(--borde);
+    color: var(--cafe-claro); background: var(--blanco);
+  }
+
+  .chat-wrap { max-width: 720px; margin: 0 auto 3rem; width: 100%; padding: 0 1rem; }
+  .chat-box {
+    background: var(--blanco);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    overflow: hidden;
+    box-shadow: 0 4px 32px var(--sombra);
+  }
+  .chat-topbar {
+    background: var(--verde);
+    padding: 14px 20px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .avatar {
+    width: 34px; height: 34px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .chat-topbar-info { flex: 1; }
+  .chat-topbar-name { font-size: 14px; font-weight: 500; color: #fff; line-height: 1.2; }
+  .chat-topbar-status { font-size: 11px; color: rgba(255,255,255,0.75); }
+  .status-dot {
+    display: inline-block; width: 6px; height: 6px;
+    background: #7fffc4; border-radius: 50%; margin-right: 4px;
+  }
+
+  .messages {
+    height: 420px; overflow-y: auto;
+    padding: 20px 16px;
+    display: flex; flex-direction: column; gap: 14px;
+    scroll-behavior: smooth;
+  }
+  .messages::-webkit-scrollbar { width: 4px; }
+  .messages::-webkit-scrollbar-thumb { background: var(--borde); border-radius: 2px; }
+
+  .msg { display: flex; gap: 8px; align-items: flex-end; animation: fadeUp 0.25s ease; }
+  .msg.user { flex-direction: row-reverse; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .msg-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; flex-shrink: 0; margin-bottom: 2px;
+  }
+  .msg-avatar.bot { background: var(--verde-claro); }
+  .msg-avatar.usr { background: var(--cafe); color: #fff; font-size: 11px; font-weight: 500; }
+  .bubble {
+    max-width: 78%; padding: 10px 14px;
+    border-radius: 16px; font-size: 14px;
+    line-height: 1.6; word-break: break-word;
+  }
+  .bubble.bot { background: var(--verde-claro); color: var(--cafe); border-bottom-left-radius: 4px; }
+  .bubble.user { background: var(--verde); color: #fff; border-bottom-right-radius: 4px; }
+  .bubble strong { font-weight: 500; }
+  .bubble table { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: 13px; }
+  .bubble table th, .bubble table td { padding: 5px 8px; border: 1px solid rgba(26,107,74,0.2); text-align: left; }
+  .bubble table th { background: rgba(26,107,74,0.1); font-weight: 500; }
+  .bubble ul, .bubble ol { padding-left: 18px; margin: 4px 0; }
+  .bubble li { margin-bottom: 2px; }
+  .bubble h3 { font-size: 14px; font-weight: 500; margin: 8px 0 4px; }
+  .bubble p { margin-bottom: 6px; }
+  .bubble p:last-child { margin-bottom: 0; }
+
+  .typing { display: flex; align-items: center; gap: 4px; padding: 12px 14px; }
+  .typing span {
+    width: 7px; height: 7px;
+    background: var(--verde-medio);
+    border-radius: 50%;
+    animation: bounce 1.2s infinite; opacity: 0.6;
+  }
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-6px); }
+  }
+
+  .suggestions { padding: 10px 16px 0; display: flex; gap: 6px; flex-wrap: wrap; }
+  .sug-btn {
+    font-size: 12px; padding: 5px 12px;
+    border-radius: 20px; border: 1px solid var(--borde);
+    background: var(--crema); color: var(--cafe-claro);
+    cursor: pointer; transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .sug-btn:hover { background: var(--verde-claro); border-color: var(--verde-medio); color: var(--verde); }
+
+  .input-area {
+    padding: 12px 14px 14px;
+    border-top: 1px solid var(--borde);
+    display: flex; gap: 8px; align-items: flex-end;
+  }
+  .input-wrap {
+    flex: 1; background: var(--crema);
+    border: 1px solid var(--borde);
+    border-radius: 14px; padding: 8px 14px;
+    display: flex; align-items: center;
+    transition: border-color 0.2s;
+  }
+  .input-wrap:focus-within { border-color: var(--verde-medio); }
+  #userInput {
+    flex: 1; border: none; background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; color: var(--cafe);
+    outline: none; resize: none;
+    height: 22px; max-height: 88px;
+    overflow-y: auto; line-height: 1.5;
+  }
+  #userInput::placeholder { color: #b5a89a; }
+  #sendBtn {
+    width: 40px; height: 40px;
+    background: var(--verde); border: none;
+    border-radius: 12px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: background 0.15s, transform 0.1s;
+  }
+  #sendBtn:hover { background: var(--verde-medio); }
+  #sendBtn:active { transform: scale(0.95); }
+  #sendBtn svg { width: 18px; height: 18px; fill: #fff; }
+  #sendBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .disclaimer {
+    text-align: center; font-size: 11px; color: #b5a89a;
+    padding: 0 2rem 2rem;
+    max-width: 560px; margin: 0 auto; line-height: 1.6;
+  }
+  footer {
+    margin-top: auto;
+    border-top: 1px solid var(--borde);
+    padding: 1.2rem 2rem;
+    text-align: center; font-size: 11px; color: #b5a89a;
+    background: var(--blanco);
+  }
+  @media (max-width: 600px) {
+    header { padding: 0 1rem; }
+    .hero { padding: 2rem 1rem 1.5rem; }
+    .messages { height: 340px; }
+    .bubble { max-width: 88%; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🥗</div>
+    <span class="logo-text">NutriBot</span>
+  </div>
+  <span class="header-badge">Basado en guías OMS</span>
+</header>
+
+<div class="hero">
+  <h1>Tu asistente de <span>salud y nutrición</span> siempre disponible</h1>
+  <p>Resuelve tus dudas sobre alimentación, recetas saludables y calcula tu IMC o ingesta de agua. Información basada en la OMS y organismos oficiales.</p>
+  <div class="chips">
+    <span class="chip">🥗 Nutrición</span>
+    <span class="chip">🍳 Recetas</span>
+    <span class="chip">📊 IMC &amp; Cálculos</span>
+    <span class="chip">💧 Hidratación</span>
+    <span class="chip">❓ Hábitos saludables</span>
+  </div>
+</div>
+
+<div class="chat-wrap">
+  <div class="chat-box">
+    <div class="chat-topbar">
+      <div class="avatar">🥦</div>
+      <div class="chat-topbar-info">
+        <div class="chat-topbar-name">NutriBot</div>
+        <div class="chat-topbar-status"><span class="status-dot"></span>En línea · Asistente de salud y nutrición</div>
+      </div>
+    </div>
+
+    <div class="messages" id="messages">
+      <div class="msg">
+        <div class="msg-avatar bot">🥦</div>
+        <div class="bubble bot">
+          ¡Hola! 👋 Soy <strong>NutriBot</strong>, tu asistente de salud y alimentación.<br><br>
+          Puedo ayudarte con:<br>
+          🥗 Consejos de nutrición basados en la OMS<br>
+          🍳 Recetas saludables y deliciosas<br>
+          📊 Tu IMC, calorías diarias o ingesta de agua<br>
+          ❓ Dudas sobre hábitos saludables<br><br>
+          Recuerda que soy un asistente educativo y no reemplazo a tu médico. ¿En qué te ayudo hoy?
+        </div>
+      </div>
+    </div>
+
+    <div class="suggestions" id="suggestions">
+      <button class="sug-btn" onclick="quickSend('¿Cuál es mi IMC si peso 70kg y mido 1.65m?')">📊 Calcular mi IMC</button>
+      <button class="sug-btn" onclick="quickSend('Dame una receta saludable alta en proteínas')">🍳 Receta proteica</button>
+      <button class="sug-btn" onclick="quickSend('¿Cuánta agua debo tomar al día si peso 68kg?')">💧 Mi ingesta de agua</button>
+      <button class="sug-btn" onclick="quickSend('¿Qué alimentos recomienda la OMS para el corazón?')">❤️ Salud cardíaca</button>
+    </div>
+
+    <div class="input-area">
+      <div class="input-wrap">
+        <textarea id="userInput"
+          placeholder="Escribe tu pregunta aquí..."
+          rows="1"
+          onkeydown="handleKey(event)"
+          oninput="autoResize(this)"></textarea>
+      </div>
+      <button id="sendBtn" onclick="sendMessage()" title="Enviar">
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<p class="disclaimer">
+  ⚠️ NutriBot es un asistente educativo basado en guías de la OMS y organismos oficiales.
+  No reemplaza la consulta con un médico o nutriólogo certificado.
+</p>
+
+<footer>
+  NutriBot &copy; 2025 · Información basada en OMS, FAO y consenso científico internacional
+</footer>
+
+<script>
+var SYSTEM_PROMPT = "Eres NutriBot, un asistente virtual amigable, empatico y confiable especializado en salud general, alimentacion saludable y recetas nutritivas. Tu conocimiento se basa en las guias y recomendaciones oficiales de la Organizacion Mundial de la Salud (OMS), la FAO, y organismos de salud reconocidos internacionalmente.\n\nROL Y PERSONALIDAD:\n- Tu nombre es NutriBot. Eres calido, paciente y nunca haces sentir mal al usuario.\n- Hablas en espanol claro, sin tecnicismos innecesarios.\n- Tratas a cada persona con respeto, sin juzgar sus habitos actuales.\n- Eres positivo y motivador.\n\nFUENTES Y VERACIDAD:\n- Basas tus respuestas en recomendaciones de: OMS, FAO, Dietary Guidelines (USDA) y consenso cientifico establecido.\n- Nunca inventes datos o estudios. Si no tienes certeza, dilo con honestidad.\n- No promueves dietas de moda, suplementos sin evidencia, ni productos comerciales.\n\nLIMITES MEDICOS:\n- SIEMPRE deja claro que NO eres un medico ni nutriologo certificado.\n- NUNCA diagnostiques enfermedades.\n- NUNCA recetes medicamentos ni suplementos con dosis exactas.\n- Si el usuario describe sintomas graves, dile que busque atencion medica urgente.\n- Al final de consejos importantes escribe: Recuerda que esta informacion es educativa y no reemplaza la consulta con un profesional de salud.\n\nTEMAS QUE PUEDES RESPONDER:\n1. Salud y bienestar general.\n2. Nutricion y alimentacion saludable.\n3. Recetas saludables y nutritivas.\n4. Sustituciones de ingredientes.\n5. Menus semanales saludables.\n6. Calculos: IMC, agua diaria, calorias estimadas.\n7. Etiquetas nutricionales.\n8. Mitos y verdades sobre alimentacion.\n9. Alimentacion por etapas de vida.\n\nCALCULOS:\n1. IMC: peso(kg) dividido entre altura(m) al cuadrado. Clasificacion OMS: Bajo peso menor a 18.5, Normal 18.5-24.9, Sobrepeso 25-29.9, Obesidad mayor o igual a 30.\n2. Agua diaria: 35ml por kg de peso. Ajusta mas 500ml en clima calido o actividad intensa.\n3. Calorias (Mifflin-St Jeor): Hombres: (10 x peso) + (6.25 x altura cm) - (5 x edad) + 5. Mujeres: (10 x peso) + (6.25 x altura cm) - (5 x edad) - 161. Multiplicar por factor de actividad.\n\nFORMATO DE RECETAS:\nNombre, informacion nutricional por porcion, tiempo, porciones, ingredientes con cantidades, preparacion numerada, consejo nutricional, sustituciones.\n\nNUNCA: diagnosticar, recetar, inventar datos, responder temas fuera de salud y nutricion.";
+
+var conversationHistory = [];
+
+function handleKey(e) {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = "22px";
+  el.style.height = Math.min(el.scrollHeight, 88) + "px";
+}
+
+function quickSend(text) {
+  document.getElementById("userInput").value = text;
+  sendMessage();
+}
+
+function addMessage(role, text) {
+  var msgs = document.getElementById("messages");
+  var div = document.createElement("div");
+  div.className = "msg" + (role === "user" ? " user" : "");
+
+  var avatarDiv = document.createElement("div");
+  avatarDiv.className = "msg-avatar " + (role === "bot" ? "bot" : "usr");
+  avatarDiv.textContent = role === "bot" ? "🥦" : "Tu";
+
+  var bubble = document.createElement("div");
+  bubble.className = "bubble " + (role === "bot" ? "bot" : "user");
+  bubble.innerHTML = formatText(text);
+
+  div.appendChild(avatarDiv);
+  div.appendChild(bubble);
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function formatText(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.*?)\*/g, "<em>$1</em>")
+    .replace(/^### (.*)/gm, "<h3>$1</h3>")
+    .replace(/^## (.*)/gm, "<h3>$1</h3>")
+    .replace(/\n\n/g, "</p><p>")
+    .replace(/\n/g, "<br>");
+}
+
+function showTyping() {
+  var msgs = document.getElementById("messages");
+  var div = document.createElement("div");
+  div.className = "msg";
+  div.id = "typing-indicator";
+
+  var avatarDiv = document.createElement("div");
+  avatarDiv.className = "msg-avatar bot";
+  avatarDiv.textContent = "🥦";
+
+  var bubble = document.createElement("div");
+  bubble.className = "bubble bot typing";
+  bubble.innerHTML = "<span></span><span></span><span></span>";
+
+  div.appendChild(avatarDiv);
+  div.appendChild(bubble);
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping() {
+  var el = document.getElementById("typing-indicator");
+  if (el) { el.remove(); }
+}
+
+function sendMessage() {
+  var input = document.getElementById("userInput");
+  var text = input.value.trim();
+  if (!text) { return; }
+
+  input.value = "";
+  input.style.height = "22px";
+  document.getElementById("sendBtn").disabled = true;
+  document.getElementById("suggestions").style.display = "none";
+
+  addMessage("user", text);
+  conversationHistory.push({ role: "user", content: text });
+
+  showTyping();
+
+  var messages = [{ role: "system", content: SYSTEM_PROMPT }].concat(conversationHistory);
+  
+  fetch("https://nutribot-orpin.vercel.app/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages: messages })
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(data) {
+    removeTyping();
+    if (data.error) {
+      addMessage("bot", "Error: " + (data.error.message || "Hubo un problema con el servidor."));
+    } else {
+      var reply = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content)
+        ? data.choices[0].message.content
+        : "Lo siento, no pude generar una respuesta. Intenta de nuevo.";
+      addMessage("bot", reply);
+      conversationHistory.push({ role: "assistant", content: reply });
+    }
+    document.getElementById("sendBtn").disabled = false;
+    document.getElementById("userInput").focus();
+  })
+  .catch(function(err) {
+    removeTyping();
+    addMessage("bot", "No pude conectarme. Revisa tu conexion a internet.");
+    document.getElementById("sendBtn").disabled = false;
+  });
+}
+</script>
+</body>
+</html>

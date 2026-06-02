@@ -1,202 +1,127 @@
-// =======================
-// BASE DE DATOS SIMPLE
-// =======================
-
-const alimentosDB = {
-
-    manzana: {
-        calorias: 52,
-        proteina: 0.3,
-        carbohidratos: 14,
-        grasa: 0.2
-    },
-
-    arroz: {
-        calorias: 130,
-        proteina: 2.7,
-        carbohidratos: 28,
-        grasa: 0.3
-    },
-
-    pollo: {
-        calorias: 239,
-        proteina: 27,
-        carbohidratos: 0,
-        grasa: 14
-    },
-
-    frijoles: {
-        calorias: 347,
-        proteina: 21,
-        carbohidratos: 63,
-        grasa: 1.2
-    },
-
-    huevo: {
-        calorias: 155,
-        proteina: 13,
-        carbohidratos: 1.1,
-        grasa: 11
-    }
-};
-
-
-// =======================
-// ELEMENTOS HTML
-// =======================
-
+const inputBuscar = document.getElementById("inputBuscar");
+const btnBuscar = document.getElementById("btnBuscar");
+const listaResultados = document.getElementById("listaResultados");
 const form = document.getElementById("foodForm");
-
+const productoSeleccionadoTxt = document.getElementById("productoSeleccionado");
+const contador = document.getElementById("contadorCalorias");
 const resultado = document.getElementById("resultado");
 
-const contador = document.getElementById("contadorCalorias");
+let alimentoSeleccionado = null;
+let caloriasTotales = Number(localStorage.getItem("caloriasHoy")) || 0;
+contador.innerText = `Calorías de hoy: ${caloriasTotales.toFixed(1)} kcal`;
 
-
-// =======================
-// CARGAR CALORÍAS
-// =======================
-
-let caloriasTotales =
-    Number(localStorage.getItem("caloriasHoy")) || 0;
-
-contador.innerText =
-`Calorías de hoy: ${caloriasTotales} kcal`;
-
-
-// =======================
-// FORMULARIO
-// =======================
-
-form.addEventListener("submit", (e) => {
-
-    e.preventDefault();
-
-    const nombre =
-        document.getElementById("nombre")
-        .value
-        .toLowerCase();
-
-    const cantidad =
-        Number(document.getElementById("cantidad").value);
-
-    const hora =
-        document.getElementById("hora").value;
-
-
-    // VALIDACIÓN
-    if(!nombre || !cantidad || !hora){
-
-        alert("Completa todos los campos 🌱");
-
-        return;
-    }
-
-
-    // BUSCAR ALIMENTO
-    const alimento = alimentosDB[nombre];
-
-
-    if(!alimento){
-
-        resultado.innerHTML = `
-            <p>
-            ⚠ No encontramos ese alimento.
-            </p>
-        `;
-
-        return;
-    }
-
-
-    // CÁLCULOS
-    const factor = cantidad / 100;
-
-    const calorias =
-        (alimento.calorias * factor).toFixed(1);
-
-    const proteina =
-        (alimento.proteina * factor).toFixed(1);
-
-    const carbohidratos =
-        (alimento.carbohidratos * factor).toFixed(1);
-
-    const grasa =
-        (alimento.grasa * factor).toFixed(1);
-
-
-    // GUARDAR CALORÍAS
-    caloriasTotales += Number(calorias);
-
-    localStorage.setItem(
-        "caloriasHoy",
-        caloriasTotales
-    );
-
-
-    // GUARDAR REGISTRO
-    const registros =
-        JSON.parse(localStorage.getItem("registros"))
-        || [];
-
-registros.push({
-
-    nombre,
-
-    cantidad,
-
-    hora,
-
-    calorias,
-
-    fecha:
-    new Date()
-    .toISOString()
-    .split("T")[0]
-
+btnBuscar.addEventListener("click", buscarAlimentoAPI);
+inputBuscar.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") buscarAlimentoAPI();
 });
 
-    localStorage.setItem(
-        "registros",
-        JSON.stringify(registros)
-    );
+function buscarAlimentoAPI() {
+    const texto = inputBuscar.value.trim();
+    if (!texto) {
+        alert("Escribe algo para buscar 🍎");
+        return;
+    }
 
+    listaResultados.innerHTML = "<p style='color: white;'>Buscando en la base de datos...</p>";
 
-    // MOSTRAR RESULTADOS
+    const url = `https://mx.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(texto)}&search_simple=1&action=process&json=1&page_size=5`;
+
+    fetch(url)
+        .then(response => response.json()) 
+        .then(data => {
+            listaResultados.innerHTML = "";
+            
+            if (!data.products || data.products.length === 0) {
+                listaResultados.innerHTML = "<p style='color: white;'>No se encontraron productos. ¡Intenta con otra palabra!</p>";
+                return;
+            }
+
+            data.products.forEach(producto => {
+                const nutris = producto.nutriments;
+                const kcal100g = nutris["energy-kcal_100g"] || nutris["energy-kcal"] || 0;
+                const prot100g = nutris["proteins_100g"] || 0;
+                const carbs100g = nutris["carbohydrates_100g"] || 0;
+                const grasas100g = nutris["fat_100g"] || 0;
+
+                const item = document.createElement("div");
+                item.style.background = "rgba(255, 255, 255, 0.2)";
+                item.style.padding = "10px";
+                item.style.margin = "5px 0";
+                item.style.borderRadius = "5px";
+                item.style.cursor = "pointer";
+                item.style.color = "white";
+                item.innerHTML = `<strong>${producto.product_name || "Producto Genérico"}</strong><br><small>${kcal100g} kcal por cada 100g</small>`;
+
+                item.addEventListener("click", () => {
+                    alimentoSeleccionado = {
+                        nombre: producto.product_name || texto,
+                        kcal100g,
+                        prot100g,
+                        carbs100g,
+                        grasas100g
+                    };
+                    
+                    productoSeleccionadoTxt.innerText = `Seleccionado: ${alimentoSeleccionado.nombre}`;
+                    form.style.display = "block";
+                    listaResultados.innerHTML = ""; 
+                });
+
+                listaResultados.appendChild(item);
+            });
+        })
+        .catch(error => {
+            console.error("Error al conectar con la API:", error);
+            listaResultados.innerHTML = "<p style='color: red;'>Error de red al conectar con la API.</p>";
+        });
+}
+
+form.addEventListener("submit", (e) => {
+    e.preventDefault();
+
+    const cantidad = Number(document.getElementById("cantidad").value); 
+    const hora = document.getElementById("hora").value;
+
+    if (!alimentoSeleccionado || !cantidad || !hora) {
+        alert("Por favor completa los gramos y la hora ⏰");
+        return;
+    }
+
+    const factor = cantidad / 100;
+    const caloriasCalculadas = alimentoSeleccionado.kcal100g * factor;
+    const proteinaCalculada = alimentoSeleccionado.prot100g * factor;
+    const carbohidratosCalculados = alimentoSeleccionado.carbs100g * factor;
+    const grasaCalculada = alimentoSeleccionado.grasas100g * factor;
+
+    caloriasTotales += caloriasCalculadas;
+    localStorage.setItem("caloriasHoy", caloriasTotales);
+
+    const registros = JSON.parse(localStorage.getItem("registros")) || [];
+    registros.push({
+        nombre: alimentoSeleccionado.nombre,
+        cantidad: cantidad,
+        hora: hora,
+        calorias: caloriasCalculadas,
+        proteina: proteinaCalculada,
+        carbohidratos: carbohidratosCalculados,
+        grasa: grasaCalculada,
+        fecha: new Date().toISOString().split("T")[0]
+    });
+    localStorage.setItem("registros", JSON.stringify(registros));
+
     resultado.innerHTML = `
-
-        <div class="card">
-
-            <h2>✅ Alimento guardado</h2>
-
-            <br>
-
-            <p><strong>Alimento:</strong> ${nombre}</p>
-
-            <p><strong>Cantidad:</strong> ${cantidad} g</p>
-
-            <p><strong>Hora:</strong> ${hora}</p>
-
-            <br>
-
-            <p>🔥 Calorías: ${calorias} kcal</p>
-
-            <p>💪 Proteína: ${proteina} g</p>
-
-            <p>🌾 Carbohidratos: ${carbohidratos} g</p>
-
-            <p>🥑 Grasas: ${grasa} g</p>
-
+        <div class="card" style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 15px; margin-top: 15px; color: #333;">
+            <h3 style="color: #2e5a36;">✅ ¡Registrado con éxito!</h3>
+            <p><strong>${alimentoSeleccionado.nombre}</strong></p>
+            <p>🔥 Calorías: ${caloriasCalculadas.toFixed(1)} kcal</p>
+            <p>💪 Proteínas: ${proteinaCalculada.toFixed(1)} g</p>
+            <p>🌾 Carbs: ${carbohidratosCalculados.toFixed(1)} g</p>
+            <p>🥑 Grasas: ${grasaCalculada.toFixed(1)} g</p>
         </div>
-
     `;
 
-
-    // ACTUALIZAR CONTADOR
-    contador.innerText =
-    `Calorías de hoy: ${caloriasTotales.toFixed(1)} kcal`;
-
-
-    // LIMPIAR FORM
+    contador.innerText = `Calorías de hoy: ${caloriasTotales.toFixed(1)} kcal`;
     form.reset();
-
+    form.style.display = "none";
+    inputBuscar.value = "";
+    alimentoSeleccionado = null;
 });
